@@ -6,5 +6,11 @@ module.exports = (sequelize, DataTypes) => {
     rawUrl: DataTypes.STRING,
   });
 
+  Event.associate = function (models) {
+    Event.hasMany(models.TeamMember, {
+      foreignKey: "event_id",
+    });
+  };
+
   return Event;
 };

@@ -1,8 +1,9 @@
-const { Event } = require("../app/models");
+const { Event, TeamMember } = require("../app/models");
 const router = require("express").Router();
 const path = require("path");
 const AWS = require("aws-sdk");
 const multer = require("multer");
+const { v4: uuidv4 } = require("uuid");
 
 // Set up Multer for handling file uploads
 const storage = multer.diskStorage({
@@ -207,6 +208,78 @@ router.put("/events/:eventId", upload.single("iconFile"), async (req, res) => {
   } catch (error) {
     console.error("Error updating event:", error);
     res.status(500).json({ error: "Failed to update event" });
+  }
+});
+
+router.post("/team-members", async (req, res) => {
+  const teamMembersData = req.body;
+
+  try {
+    const createdTeamMembers = [];
+    const teamId = uuidv4(); // Generate a random team ID
+    for (const teamMemberData of teamMembersData) {
+      const newTeamMember = await TeamMember.create({
+        ...teamMemberData,
+        teamId, // Assign the generated team ID to the teamId column
+      });
+      createdTeamMembers.push(newTeamMember);
+    }
+
+    const event = await Event.findOne(); // Adjust the conditions to find the appropriate event
+
+    await Promise.all(
+      createdTeamMembers.map((teamMember) => teamMember.setEvent(event))
+    );
+
+    res.status(201).json(createdTeamMembers);
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to retrieve team members",
+      stack: error.stack, // Include the stack trace in the response
+    });
+  }
+});
+
+// Find users by team
+router.get("/team-members/:teamId", async (req, res) => {
+  const teamId = req.params.teamId;
+
+  try {
+    const teamMembers = await TeamMember.findAll({
+      where: {
+        teamId: teamId,
+      },
+    });
+
+    res.status(200).json(teamMembers);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to retrieve team members" });
+  }
+});
+
+// Find users by event
+router.get("/team-members/event/:eventId", async (req, res) => {
+  const eventId = req.params.eventId;
+
+  try {
+    const event = await Event.findByPk(eventId, {
+      include: {
+        model: TeamMember,
+        as: "TeamMembers", // Make sure to use the correct alias for the association
+      },
+    });
+
+    if (!event) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    const teamMembers = event.TeamMembers;
+    res.status(200).json(teamMembers);
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to retrieve team members",
+      stack: error.stack, // Include the stack trace in the response
+    });
   }
 });
 
