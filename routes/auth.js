@@ -6,19 +6,8 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 
 router.post("/register", async (req, res) => {
-  // validation
-  const { error } = registerValidation(req.body);
-  if (error) return res.status(400).send(error.details[0].message);
-
-  // hash the password
-  const salt = await bcrypt.genSaltSync(10);
-  const hashedPassword = await bcrypt.hashSync(req.body.password, salt);
-  req.body.password = hashedPassword;
-
   // execute Query
   try {
-    const user = await User.create(req.body);
-
     // Create a transporter object with your email service provider details
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -31,9 +20,13 @@ router.post("/register", async (req, res) => {
     // Define the email content
     const mailOptions = {
       from: "nobre@casualbear.io",
-      to: "jose@nobre.io",
+      to: req.body.email,
       subject: "Test Email",
-      text: "This is a test email sent from Node.js using Nodemailer.",
+      text:
+        "Welcome. This are your credentials. Email: " +
+        req.body.email +
+        " and Password: " +
+        req.body.password,
     };
 
     // Send the email
@@ -44,6 +37,13 @@ router.post("/register", async (req, res) => {
         console.log("Email sent: " + info.response);
       }
     });
+
+    // hash the password
+    const salt = await bcrypt.genSaltSync(10);
+    const hashedPassword = await bcrypt.hashSync(req.body.password, salt);
+    req.body.password = hashedPassword;
+
+    const user = await User.create(req.body);
 
     res.json(user);
   } catch (error) {
