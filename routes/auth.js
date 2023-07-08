@@ -3,6 +3,7 @@ const router = require("express").Router();
 const { registerValidation, loginValidation } = require("../validation");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
 
 router.post("/register", async (req, res) => {
   // validation
@@ -17,6 +18,33 @@ router.post("/register", async (req, res) => {
   // execute Query
   try {
     const user = await User.create(req.body);
+
+    // Create a transporter object with your email service provider details
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: "nobre@casualbear.io",
+        pass: "Lol08lol!!",
+      },
+    });
+
+    // Define the email content
+    const mailOptions = {
+      from: "nobre@casualbear.io",
+      to: "jose@nobre.io",
+      subject: "Test Email",
+      text: "This is a test email sent from Node.js using Nodemailer.",
+    };
+
+    // Send the email
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log("Email sent: " + info.response);
+      }
+    });
+
     res.json(user);
   } catch (error) {
     res.status(400).send(error);
