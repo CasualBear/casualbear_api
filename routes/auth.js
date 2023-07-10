@@ -76,7 +76,7 @@ router.post("/login", async (req, res) => {
 
     // create and assign a token
     const token = jwt.sign({ id: user[0].id }, "KEY_TO_SIGN_TOKEN");
-    res.status(200).send({ auth: true, token: token });
+    res.status(200).send({ auth: true, token: token, role: user[0].role });
   } catch (error) {
     res.status(400).send(error);
   }

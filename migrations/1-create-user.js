@@ -3,7 +3,7 @@ User is someone that is signed up but does have a password to login.
 */
 module.exports = {
   up: (queryInterface, DataTypes) => {
-    return queryInterface.createTable("Captains", {
+    return queryInterface.createTable("Users", {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -15,6 +15,11 @@ module.exports = {
         type: DataTypes.STRING,
       },
       email: {
+        allowNull: false,
+        type: DataTypes.STRING,
+        unique: true,
+      },
+      role: {
         allowNull: false,
         type: DataTypes.STRING,
         unique: true,
