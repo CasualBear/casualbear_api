@@ -362,7 +362,7 @@ router.post("/events/:eventId/questions", async (req, res) => {
     question,
     answers,
     correctAnswerIndex,
-    zones,
+    zone,
     latitude,
     longitude,
     address,
@@ -372,7 +372,7 @@ router.post("/events/:eventId/questions", async (req, res) => {
     const event = await Event.findByPk(eventId);
 
     if (!event) {
-      return res.status(404).json({ error: "Event not found" });
+      return res.status(404).json({ error: "Question not added" });
     }
 
     let serializedAnswers = null;
@@ -388,7 +388,7 @@ router.post("/events/:eventId/questions", async (req, res) => {
       question,
       answers: serializedAnswers ? JSON.stringify(serializedAnswers) : null,
       correctAnswerIndex,
-      zones: JSON.stringify(zones),
+      zone, // Save the zone as a single string
       latitude,
       longitude,
       address,
@@ -412,7 +412,7 @@ router.put("/events/:eventId/zones/:zoneName", async (req, res) => {
     const event = await Event.findByPk(eventId);
 
     if (!event) {
-      return res.status(404).json({ error: "Event not found" });
+      return res.status(404).json({ error: "Zone not found" });
     }
 
     let zones = [];
@@ -446,6 +446,33 @@ router.put("/events/:eventId/zones/:zoneName", async (req, res) => {
   } catch (error) {
     console.error("Error updating zone state:", error);
     res.status(500).json({ error: "Failed to update zone state" });
+  }
+});
+
+// Get questions by zone and event ID
+router.get("/questions/:eventId/:zoneName", async (req, res) => {
+  try {
+    const { eventId, zoneName } = req.params;
+
+    // Find the event by its ID in the database
+    const event = await Event.findByPk(eventId, {
+      include: {
+        model: Question,
+        as: "questions",
+        where: { zone: zoneName },
+      },
+    });
+
+    if (!event) {
+      return res.status(404).json({ error: "Questions not found" });
+    }
+
+    const questions = event.questions;
+
+    res.status(200).json({ questions });
+  } catch (error) {
+    console.error("Error retrieving questions by zone and event ID:", error);
+    res.status(500).json({ error: "Failed to retrieve questions" });
   }
 });
 
