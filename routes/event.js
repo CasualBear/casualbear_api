@@ -1,4 +1,4 @@
-const { Event, TeamMember } = require("../app/models");
+const { Event, TeamMember, Question } = require("../app/models");
 const router = require("express").Router();
 const path = require("path");
 const AWS = require("aws-sdk");
@@ -88,11 +88,23 @@ router.post("/upload-event", upload.single("iconFile"), async (req, res) => {
 
     const selectedColorInt = parseInt(req.body.selectedColor);
 
+    const zones = [
+      "ZoneA",
+      "ZoneB",
+      "ZonaC",
+      "ZoneD",
+      "ZoneE",
+      "ZoneF",
+      "ZoneG",
+      "ZoneH",
+    ]; // Pre-populated list of zones
+
     const event = await Event.create({
       name: req.body.name,
       description: req.body.description,
       selectedColor: selectedColorInt,
       rawUrl: s3Url,
+      zones: zones.join(", "),
     });
 
     res.status(201).json(event);
@@ -105,9 +117,42 @@ router.post("/upload-event", upload.single("iconFile"), async (req, res) => {
 router.get("/events", async (req, res) => {
   try {
     // Retrieve all events from the database
-    const events = await Event.findAll();
+    const events = await Event.findAll({
+      include: {
+        model: Question,
+        as: "questions",
+      },
+    });
 
-    res.status(200).json({ events });
+    // Parse the zones field as a JSON array for each event
+    const eventsWithParsedZones = events.map((event) => {
+      const parsedZones = event.zones.split(", ").map((zone) => zone.trim());
+      return {
+        ...event.toJSON(),
+        zones: parsedZones.map((zone) => ({
+          name: zone,
+          active: false, // Set the default activation state to false
+        })),
+      };
+    });
+
+    // Parse the answers field as a JSON array for each question in each event
+    const eventsWithParsedQuestions = eventsWithParsedZones.map((event) => {
+      const parsedQuestions = (event.questions || []).map((question) => {
+        const parsedAnswers = JSON.parse(question.answers);
+        return {
+          ...question,
+          answers: parsedAnswers,
+        };
+      });
+
+      return {
+        ...event,
+        questions: parsedQuestions,
+      };
+    });
+
+    res.status(200).json({ events: eventsWithParsedQuestions });
   } catch (error) {
     console.error("Error retrieving events:", error);
     res.status(500).json({ error: "Failed to retrieve events" });
@@ -120,14 +165,41 @@ router.get("/events/:eventId", async (req, res) => {
     const eventId = req.params.eventId;
 
     // Find the event by its ID in the database
-    const event = await Event.findByPk(eventId);
+    const event = await Event.findByPk(eventId, {
+      include: {
+        model: Question,
+        as: "questions",
+      },
+    });
 
     if (!event) {
       return res.status(404).json({ error: "Event not found." });
     }
 
-    // Send the event as the response
-    res.json({ event });
+    // Parse the zones field as a JSON array for the event
+    const parsedZones = event.zones.split(", ").map((zone) => zone.trim());
+    const parsedEvent = {
+      ...event.toJSON(),
+      zones: parsedZones.map((zone) => ({
+        name: zone,
+        active: false, // Set the default activation state to false
+      })),
+    };
+
+    // Parse the answers field as a JSON array for each question in the event
+    const parsedQuestions = (parsedEvent.questions || []).map((question) => {
+      const parsedAnswers = JSON.parse(question.answers);
+      return {
+        ...question,
+        answers: parsedAnswers,
+      };
+    });
+
+    // Include the parsed questions in the parsed event
+    parsedEvent.questions = parsedQuestions;
+
+    // Send the parsed event as the response
+    res.json({ event: parsedEvent });
   } catch (error) {
     // Handle any errors that occurred during event retrieval
     console.error("Error retrieving event:", error);
@@ -211,6 +283,7 @@ router.put("/events/:eventId", upload.single("iconFile"), async (req, res) => {
   }
 });
 
+// add teams to the event
 router.post("/team-members", async (req, res) => {
   const teamMembersData = req.body;
 
@@ -280,6 +353,91 @@ router.get("/team-members/event/:eventId", async (req, res) => {
       error: "Failed to retrieve team members",
       stack: error.stack, // Include the stack trace in the response
     });
+  }
+});
+
+// add question to event
+router.post("/events/:eventId/questions", async (req, res) => {
+  const { eventId } = req.params;
+  const {
+    question,
+    answers,
+    correctAnswerIndex,
+    zones,
+    latitude,
+    longitude,
+    address,
+  } = req.body;
+
+  try {
+    const event = await Event.findByPk(eventId);
+
+    if (!event) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    const serializedAnswers = answers.map((answer, index) => ({
+      index: index,
+      answer: answer,
+    }));
+
+    const newQuestion = await Question.create({
+      question,
+      answers: JSON.stringify(serializedAnswers),
+      correctAnswerIndex,
+      zones: JSON.stringify(zones),
+      latitude,
+      longitude,
+      address,
+      eventId,
+    });
+
+    res.status(201).json(newQuestion);
+  } catch (error) {
+    console.error("Error creating question:", error);
+    res.status(500).json({ error: "Failed to create question" });
+  }
+});
+
+// update zone from event
+
+router.put("/events/:eventId/zones/:zoneName", async (req, res) => {
+  // TODO this needs to be a socket to return a change everytime theres a PUT method here
+  const { eventId, zoneName } = req.params;
+  const { state } = req.body;
+
+  try {
+    const event = await Event.findByPk(eventId);
+
+    if (!event) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    let zones = [];
+    try {
+      zones = JSON.parse(event.zones);
+    } catch (error) {
+      console.error("Error parsing zones:", error);
+    }
+
+    // Find the zone with the matching zoneName
+    const zoneToUpdate = zones.find((zone) => zone.name === zoneName);
+
+    if (!zoneToUpdate) {
+      return res.status(404).json({ error: "Zone not found" });
+    }
+
+    // Update the 'active' property of the zone based on the state value
+    zoneToUpdate.active = state === "active";
+
+    // Update the zones in the event
+    event.zones = JSON.stringify(zones);
+    await event.save();
+
+    res.status(200).json({ message: "Zone state updated successfully" });
+  } catch (error) {
+    console.error("Error updating zone state:", error);
+    res.status(500).json({ error: "Failed to update zone state" });
   }
 });
 

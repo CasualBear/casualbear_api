@@ -17,16 +17,18 @@ module.exports = {
       email: {
         allowNull: false,
         type: DataTypes.STRING,
-        unique: true,
       },
       role: {
-        allowNull: false,
+        allowNull: true,
         type: DataTypes.STRING,
-        unique: true,
       },
       password: {
         allowNull: false,
         type: DataTypes.STRING,
+      },
+      zones: {
+        type: DataTypes.STRING,
+        allowNull: false,
       },
       createdAt: {
         allowNull: false,
