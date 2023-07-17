@@ -49,6 +49,11 @@ module.exports = {
             type: DataTypes.STRING,
             allowNull: false,
           },
+          isVisible: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true,
+          },
           answers: {
             type: DataTypes.TEXT,
             allowNull: true,

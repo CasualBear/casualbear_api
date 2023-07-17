@@ -4,6 +4,10 @@ const path = require("path");
 const AWS = require("aws-sdk");
 const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
+const express = require("express");
+const app = express();
+const httpServer = require("http").createServer(app);
+const io = require("socket.io")(httpServer);
 
 // Set up Multer for handling file uploads
 const storage = multer.diskStorage({
@@ -89,22 +93,17 @@ router.post("/upload-event", upload.single("iconFile"), async (req, res) => {
     const selectedColorInt = parseInt(req.body.selectedColor);
 
     const zones = [
-      "ZoneA",
-      "ZoneB",
-      "ZonaC",
-      "ZoneD",
-      "ZoneE",
-      "ZoneF",
-      "ZoneG",
-      "ZoneH",
-    ]; // Pre-populated list of zones
+      { name: "ZoneA", active: true },
+      { name: "ZoneB", active: false },
+      { name: "ZoneC", active: false },
+    ];
 
     const event = await Event.create({
       name: req.body.name,
       description: req.body.description,
       selectedColor: selectedColorInt,
       rawUrl: s3Url,
-      zones: zones.join(", "),
+      zones: JSON.stringify(zones),
     });
 
     res.status(201).json(event);
@@ -126,12 +125,12 @@ router.get("/events", async (req, res) => {
 
     // Parse the zones field as a JSON array for each event
     const eventsWithParsedZones = events.map((event) => {
-      const parsedZones = event.zones.split(", ").map((zone) => zone.trim());
+      const parsedZones = JSON.parse(event.zones);
       return {
         ...event.toJSON(),
         zones: parsedZones.map((zone) => ({
-          name: zone,
-          active: false, // Set the default activation state to false
+          name: zone.name,
+          active: zone.active,
         })),
       };
     });
@@ -376,14 +375,18 @@ router.post("/events/:eventId/questions", async (req, res) => {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    const serializedAnswers = answers.map((answer, index) => ({
-      index: index,
-      answer: answer,
-    }));
+    let serializedAnswers = null;
+
+    if (answers) {
+      serializedAnswers = answers.map((answer, index) => ({
+        index: index,
+        answer: answer,
+      }));
+    }
 
     const newQuestion = await Question.create({
       question,
-      answers: JSON.stringify(serializedAnswers),
+      answers: serializedAnswers ? JSON.stringify(serializedAnswers) : null,
       correctAnswerIndex,
       zones: JSON.stringify(zones),
       latitude,
@@ -402,7 +405,6 @@ router.post("/events/:eventId/questions", async (req, res) => {
 // update zone from event
 
 router.put("/events/:eventId/zones/:zoneName", async (req, res) => {
-  // TODO this needs to be a socket to return a change everytime theres a PUT method here
   const { eventId, zoneName } = req.params;
   const { state } = req.body;
 
@@ -433,6 +435,12 @@ router.put("/events/:eventId/zones/:zoneName", async (req, res) => {
     // Update the zones in the event
     event.zones = JSON.stringify(zones);
     await event.save();
+
+    // Emit the updated zone and its state to all connected clients
+    io.emit("zoneUpdate", {
+      zone: zoneToUpdate.name,
+      active: zoneToUpdate.active,
+    });
 
     res.status(200).json({ message: "Zone state updated successfully" });
   } catch (error) {
