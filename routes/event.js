@@ -158,12 +158,11 @@ router.get("/events", async (req, res) => {
   }
 });
 
-// GET method to fetch event data
 router.get("/events/:eventId", async (req, res) => {
-  try {
-    const eventId = req.params.eventId;
+  const eventId = req.params.eventId;
 
-    // Find the event by its ID in the database
+  try {
+    // Retrieve the event with the specified ID from the database
     const event = await Event.findByPk(eventId, {
       include: {
         model: Question,
@@ -172,39 +171,36 @@ router.get("/events/:eventId", async (req, res) => {
     });
 
     if (!event) {
-      return res.status(404).json({ error: "Event not found." });
+      return res.status(404).json({ error: "Event not found" });
     }
 
-    // Parse the zones field as a JSON array for the event
-    const parsedZones = event.zones.split(", ").map((zone) => zone.trim());
-    const parsedEvent = {
+    // Parse the zones field as a JSON array
+    const parsedZones = JSON.parse(event.zones);
+    const eventWithParsedZones = {
       ...event.toJSON(),
       zones: parsedZones.map((zone) => ({
-        name: zone,
-        active: false, // Set the default activation state to false
+        name: zone.name,
+        active: zone.active,
       })),
     };
 
-    // Parse the answers field as a JSON array for each question in the event
-    const parsedQuestions = (parsedEvent.questions || []).map((question) => {
-      const parsedAnswers = JSON.parse(question.answers);
-      return {
-        ...question,
-        answers: parsedAnswers,
-      };
-    });
+    // Parse the answers field as a JSON array for each question
+    const parsedQuestions = (eventWithParsedZones.questions || []).map(
+      (question) => {
+        const parsedAnswers = JSON.parse(question.answers);
+        return {
+          ...question,
+          answers: parsedAnswers,
+        };
+      }
+    );
 
-    // Include the parsed questions in the parsed event
-    parsedEvent.questions = parsedQuestions;
+    eventWithParsedZones.questions = parsedQuestions;
 
-    // Send the parsed event as the response
-    res.json({ event: parsedEvent });
+    res.status(200).json({ event: eventWithParsedZones });
   } catch (error) {
-    // Handle any errors that occurred during event retrieval
     console.error("Error retrieving event:", error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while retrieving the event." });
+    res.status(500).json({ error: "Failed to retrieve event" });
   }
 });
 
