@@ -398,6 +398,75 @@ router.post("/events/:eventId/questions", async (req, res) => {
   }
 });
 
+// Update a question
+router.put("/questions/:questionId", async (req, res) => {
+  const { questionId } = req.params;
+  const {
+    question,
+    answers,
+    correctAnswerIndex,
+    zone,
+    latitude,
+    longitude,
+    address,
+  } = req.body;
+
+  try {
+    const existingQuestion = await Question.findByPk(questionId);
+
+    if (!existingQuestion) {
+      return res.status(404).json({ error: "Question not found" });
+    }
+
+    let serializedAnswers = null;
+
+    if (answers) {
+      serializedAnswers = answers.map((answer, index) => ({
+        index: index,
+        answer: answer,
+      }));
+    }
+
+    await existingQuestion.update({
+      question: question || existingQuestion.question,
+      answers: serializedAnswers
+        ? JSON.stringify(serializedAnswers)
+        : existingQuestion.answers,
+      correctAnswerIndex:
+        correctAnswerIndex || existingQuestion.correctAnswerIndex,
+      zone: zone || existingQuestion.zone,
+      latitude: latitude || existingQuestion.latitude,
+      longitude: longitude || existingQuestion.longitude,
+      address: address || existingQuestion.address,
+    });
+
+    res.status(200).json({ message: "Question updated successfully" });
+  } catch (error) {
+    console.error("Error updating question:", error);
+    res.status(500).json({ error: "Failed to update question" });
+  }
+});
+
+// Delete a question
+router.delete("/questions/:questionId", async (req, res) => {
+  const { questionId } = req.params;
+
+  try {
+    const question = await Question.findByPk(questionId);
+
+    if (!question) {
+      return res.status(404).json({ error: "Question not found" });
+    }
+
+    await question.destroy();
+
+    res.status(200).json({ message: "Question deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting question:", error);
+    res.status(500).json({ error: "Failed to delete question" });
+  }
+});
+
 // update zone from event
 
 router.put("/events/:eventId/zones/:zoneName", async (req, res) => {
