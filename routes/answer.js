@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const { Answer, Question, TeamMember, Event } = require("../app/models");
 
-// Create an answer for a question by a team member
 router.post("/", async (req, res) => {
   const { teamId, questionId, answer, answerIndex } = req.body;
 
@@ -21,6 +20,18 @@ router.post("/", async (req, res) => {
     let isAnyAnswerCorrect = false;
 
     for (const teamMember of teamMembers) {
+      const existingAnswer = await Answer.findOne({
+        where: {
+          teamMemberId: teamMember.id,
+          questionId: questionId,
+        },
+      });
+
+      if (existingAnswer) {
+        // Team has already answered this question
+        return res.status(400).json({ error: "Question already answered" });
+      }
+
       const isCorrect = question.correctAnswerIndex === (answer || answerIndex);
 
       await Answer.create({
@@ -38,7 +49,7 @@ router.post("/", async (req, res) => {
     }
 
     if (isAnyAnswerCorrect) {
-      res.status(201).json({ message: "Answer is correct" });
+      res.status(200).json({ message: "Answer is correct" });
     } else {
       res.status(200).json({ message: "Answer is incorrect" });
     }
