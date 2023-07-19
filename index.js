@@ -3,7 +3,12 @@ const app = express();
 const cors = require("cors");
 const dotenv = require("dotenv");
 const httpServer = require("http").createServer(app);
-const io = require("socket.io")(httpServer);
+const io = require("socket.io")(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
 
 // Import Routes
 const authRoute = require("./routes/auth");
