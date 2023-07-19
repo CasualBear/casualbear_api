@@ -31,7 +31,14 @@ io.on("connection", (socket) => {
 
 // Route Middleware
 app.use("/api/user", authRoute);
-app.use("/api/event", eventRoute);
+app.use(
+  "/api/event",
+  (req, res, next) => {
+    req.io = io; // Pass the io instance to the eventRoute middleware
+    next();
+  },
+  eventRoute
+);
 
 // Start the server
 httpServer.listen(process.env.PORT || 8000, () => {

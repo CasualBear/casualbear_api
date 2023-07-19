@@ -4,10 +4,6 @@ const path = require("path");
 const AWS = require("aws-sdk");
 const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
-const express = require("express");
-const app = express();
-const httpServer = require("http").createServer(app);
-const io = require("socket.io")(httpServer);
 
 // Set up Multer for handling file uploads
 const storage = multer.diskStorage({
@@ -502,7 +498,7 @@ router.put("/events/:eventId/zones/:zoneName", async (req, res) => {
     await event.save();
 
     // Emit the updated zone and its state to all connected clients
-    io.emit("zoneUpdate", {
+    req.io.emit("zoneUpdate", {
       zone: zoneToUpdate.name,
       active: zoneToUpdate.active,
     });
