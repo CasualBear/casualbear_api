@@ -498,10 +498,18 @@ router.put("/events/:eventId/zones/:zoneName", async (req, res) => {
     await event.save();
 
     // Emit the updated zone and its state to all connected clients
-    req.io.emit("zoneUpdate", {
+    /*req.io.emit("zoneUpdate", {
       zone: zoneToUpdate.name,
       active: zoneToUpdate.active,
-    });
+    });*/
+
+    req.io.emit(
+      "zoneUpdate",
+      JSON.stringify({
+        zone: zoneToUpdate.name,
+        active: zoneToUpdate.active,
+      })
+    );
 
     res.status(200).json({ message: "Zone state updated successfully" });
   } catch (error) {
