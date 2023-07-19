@@ -304,6 +304,45 @@ router.post("/team-members", async (req, res) => {
   }
 });
 
+// Find teams by event
+router.get("/teams/event/:eventId", async (req, res) => {
+  const eventId = req.params.eventId;
+
+  try {
+    const event = await Event.findByPk(eventId, {
+      include: {
+        model: TeamMember,
+        as: "TeamMembers",
+      },
+    });
+
+    if (!event) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    const teams = event.TeamMembers.reduce((teams, teamMember) => {
+      const { teamId, firstName, lastName, email } = teamMember;
+      if (!teams[teamId]) {
+        teams[teamId] = {
+          teamId,
+          members: [],
+        };
+      }
+      teams[teamId].members.push({
+        firstName,
+        lastName,
+        email,
+      });
+      return teams;
+    }, {});
+
+    res.status(200).json({ teams });
+  } catch (error) {
+    console.error("Error retrieving teams:", error);
+    res.status(500).json({ error: "Failed to retrieve teams" });
+  }
+});
+
 // Find users by team
 router.get("/team-members/:teamId", async (req, res) => {
   const teamId = req.params.teamId;
