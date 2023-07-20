@@ -322,19 +322,24 @@ router.get("/teams/event/:eventId", async (req, res) => {
 
     const teams = event.TeamMembers.reduce((teams, teamMember) => {
       const { teamId, firstName, lastName, email } = teamMember;
-      if (!teams[teamId]) {
-        teams[teamId] = {
+      const existingTeam = teams.find((team) => team.teamId === teamId);
+
+      if (!existingTeam) {
+        teams.push({
           teamId,
           members: [],
-        };
+        });
       }
-      teams[teamId].members.push({
+
+      const team = teams.find((team) => team.teamId === teamId);
+      team.members.push({
         firstName,
         lastName,
         email,
       });
+
       return teams;
-    }, {});
+    }, []);
 
     res.status(200).json({ teams });
   } catch (error) {
