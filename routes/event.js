@@ -160,10 +160,17 @@ router.get("/events/:eventId", async (req, res) => {
   try {
     // Retrieve the event with the specified ID from the database
     const event = await Event.findByPk(eventId, {
-      include: {
-        model: Question,
-        as: "questions",
-      },
+      include: [
+        {
+          model: Question,
+          as: "questions",
+        },
+        {
+          model: TeamMember,
+          as: "teams",
+          attributes: ["teamId"], // Include only the team ID
+        },
+      ],
     });
 
     if (!event) {
@@ -172,28 +179,19 @@ router.get("/events/:eventId", async (req, res) => {
 
     // Parse the zones field as a JSON array
     const parsedZones = JSON.parse(event.zones);
+    const uniqueTeamIds = [...new Set(event.teams.map((team) => team.teamId))];
+
     const eventWithParsedZones = {
       ...event.toJSON(),
       zones: parsedZones.map((zone) => ({
         name: zone.name,
         active: zone.active,
       })),
+      teams: uniqueTeamIds,
     };
 
-    // Parse the answers field as a JSON array for each question
-    const parsedQuestions = (eventWithParsedZones.questions || []).map(
-      (question) => {
-        const parsedAnswers = JSON.parse(question.answers);
-        return {
-          ...question,
-          answers: parsedAnswers,
-        };
-      }
-    );
-
-    eventWithParsedZones.questions = parsedQuestions;
-
     res.status(200).json({ event: eventWithParsedZones });
+    // Include the unique team IDs in the response
   } catch (error) {
     console.error("Error retrieving event:", error);
     res.status(500).json({ error: "Failed to retrieve event" });
