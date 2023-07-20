@@ -17,6 +17,10 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         allowNull: false,
       },
+      time: {
+        allowNull: false,
+        type: Sequelize.BIGINT, // Change to BIGINT data type
+      },
       questionId: {
         type: Sequelize.INTEGER,
         allowNull: false,

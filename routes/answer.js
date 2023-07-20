@@ -3,7 +3,7 @@ const router = express.Router();
 const { Answer, Question, TeamMember, Event } = require("../app/models");
 
 router.post("/", async (req, res) => {
-  const { teamId, questionId, answer, answerIndex } = req.body;
+  const { teamId, questionId, answer, answerIndex, timeInSeconds } = req.body;
 
   try {
     const question = await Question.findByPk(questionId);
@@ -39,6 +39,7 @@ router.post("/", async (req, res) => {
         questionId,
         teamMemberId: teamMember.id,
         isCorrect,
+        time: timeInSeconds,
       });
 
       if (isCorrect) {
@@ -70,7 +71,7 @@ router.get("/teams/event/:eventId", async (req, res) => {
         include: [
           {
             model: Answer,
-            attributes: ["id", "answer", "isCorrect"],
+            attributes: ["id", "answer", "isCorrect", "time"], // Include the "time" attribute
             include: {
               model: Question,
               attributes: ["id", "correctAnswerIndex"],
@@ -90,19 +91,15 @@ router.get("/teams/event/:eventId", async (req, res) => {
     }
 
     const teams = event.TeamMembers.reduce((teams, teamMember) => {
-      const { teamId, firstName, lastName, email } = teamMember;
+      const { teamId } = teamMember;
       if (!teams[teamId]) {
         teams[teamId] = {
           teamId,
-          members: [],
           correctAnswers: 0,
+          totalTime: 0, // Initialize the total time as 0
+          answerCount: 0, // Initialize the answer count as 0
         };
       }
-      teams[teamId].members.push({
-        firstName,
-        lastName,
-        email,
-      });
 
       // Calculate the number of correct answers for each team
       teamMember.Answers.forEach((answer) => {
@@ -112,10 +109,23 @@ router.get("/teams/event/:eventId", async (req, res) => {
         }
       });
 
+      // Accumulate the total time and count the answers for each team
+      teamMember.Answers.forEach((answer) => {
+        teams[teamId].totalTime += answer.time;
+        teams[teamId].answerCount++;
+      });
+
       return teams;
     }, {});
 
-    res.status(200).json({ teams });
+    // Calculate the average time for each team and format the response
+    const formattedTeams = Object.values(teams).map((team) => ({
+      teamId: team.teamId,
+      averageTime: team.answerCount > 0 ? team.totalTime / team.answerCount : 0,
+      correctAnswers: team.correctAnswers,
+    }));
+
+    res.status(200).json({ teams: formattedTeams });
   } catch (error) {
     console.error("Error retrieving teams:", error);
     res.status(500).json({ error: "Failed to retrieve teams" });
