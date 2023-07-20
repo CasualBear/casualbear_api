@@ -107,7 +107,7 @@ router.get("/teams/event/:eventId", async (req, res) => {
       // Calculate the number of correct answers for each team
       teamMember.Answers.forEach((answer) => {
         const question = answer.Question;
-        if (question.correctAnswerIndex === answer.answer) {
+        if (answer.isCorrect) {
           teams[teamId].correctAnswers++;
         }
       });
