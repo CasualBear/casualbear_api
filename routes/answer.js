@@ -59,7 +59,6 @@ router.post("/", async (req, res) => {
     res.status(500).json({ error: "Failed to create answer" });
   }
 });
-
 router.get("/teams/event/:eventId", async (req, res) => {
   const eventId = req.params.eventId;
 
@@ -71,7 +70,7 @@ router.get("/teams/event/:eventId", async (req, res) => {
         include: [
           {
             model: Answer,
-            attributes: ["id", "answer", "isCorrect", "time"], // Include the "time" attribute
+            attributes: ["id", "answer", "isCorrect", "time"],
             include: {
               model: Question,
               attributes: ["id", "correctAnswerIndex"],
@@ -90,39 +89,45 @@ router.get("/teams/event/:eventId", async (req, res) => {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    const teams = event.TeamMembers.reduce((teams, teamMember) => {
+    const teams = {};
+
+    for (const teamMember of event.TeamMembers) {
       const { teamId } = teamMember;
       if (!teams[teamId]) {
         teams[teamId] = {
           teamId,
-          correctAnswers: 0,
-          totalTime: 0, // Initialize the total time as 0
-          answerCount: 0, // Initialize the answer count as 0
+          correctAnswerIds: new Set(),
+          totalTime: 0,
+          answerCount: 0,
+          totalTeamMembers: 0,
         };
       }
 
-      // Calculate the number of correct answers for each team
+      // Accumulate the total time and count the answers for each team
+      teams[teamId].totalTime += teamMember.Answers.reduce(
+        (total, answer) => total + answer.time,
+        0
+      );
+      teams[teamId].answerCount += teamMember.Answers.length;
+      teams[teamId].totalTeamMembers += 1;
+
+      // If the answer is correct, add its id to the Set of correctAnswerIds
       teamMember.Answers.forEach((answer) => {
-        const question = answer.Question;
         if (answer.isCorrect) {
-          teams[teamId].correctAnswers++;
+          teams[teamId].correctAnswerIds.add(answer.id);
         }
       });
+    }
 
-      // Accumulate the total time and count the answers for each team
-      teamMember.Answers.forEach((answer) => {
-        teams[teamId].totalTime += answer.time;
-        teams[teamId].answerCount++;
-      });
-
-      return teams;
-    }, {});
-
-    // Calculate the average time for each team and format the response
+    // Calculate the average time and number of correct answers per team participant and format the response
     const formattedTeams = Object.values(teams).map((team) => ({
       teamId: team.teamId,
-      averageTime: team.answerCount > 0 ? team.totalTime / team.answerCount : 0,
-      correctAnswers: team.correctAnswers,
+      averageTimeSeconds:
+        team.answerCount > 0 ? team.totalTime / team.answerCount : 0,
+      score:
+        team.totalTeamMembers > 0
+          ? team.correctAnswerIds.size / team.totalTeamMembers
+          : 0,
     }));
 
     res.status(200).json({ teams: formattedTeams });
