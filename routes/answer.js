@@ -3,7 +3,7 @@ const router = express.Router();
 const { Answer, Question, TeamMember, Event } = require("../app/models");
 
 router.post("/", async (req, res) => {
-  const { teamId, questionId, answer, answerIndex, timeInSeconds } = req.body;
+  const { teamId, questionId, answer, answerIndex, time } = req.body;
 
   try {
     const question = await Question.findByPk(questionId);
@@ -39,7 +39,7 @@ router.post("/", async (req, res) => {
         questionId,
         teamMemberId: teamMember.id,
         isCorrect,
-        time: timeInSeconds,
+        time: time,
       });
 
       if (isCorrect) {
