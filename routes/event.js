@@ -316,6 +316,71 @@ router.post("/team-members", async (req, res) => {
   }
 });
 
+// update the statuses of the team
+router.put("/team-members", async (req, res) => {
+  const updates = req.body;
+
+  try {
+    const updatePromises = updates.map(async (update) => {
+      const { id, isVerified, isCheckedIn } = update;
+
+      const teamMember = await TeamMember.findByPk(id);
+
+      if (!teamMember) {
+        return { id, status: "Team member not found" };
+      }
+
+      if (isVerified !== undefined) {
+        teamMember.isVerified = isVerified;
+      }
+
+      if (isCheckedIn !== undefined) {
+        teamMember.isCheckedIn = isCheckedIn;
+      }
+
+      await teamMember.save();
+
+      return { id, status: "Updated successfully" };
+    });
+
+    const updateResults = await Promise.all(updatePromises);
+
+    res.status(200).json({ updates: updateResults });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to update team members",
+      stack: error.stack,
+    });
+  }
+});
+
+router.delete("/team-members", async (req, res) => {
+  const { memberIds } = req.body;
+
+  try {
+    const deletePromises = memberIds.map(async (id) => {
+      const teamMember = await TeamMember.findByPk(id);
+
+      if (!teamMember) {
+        return { id, status: "Team member not found" };
+      }
+
+      await teamMember.destroy();
+
+      return { id, status: "Deleted successfully" };
+    });
+
+    const deleteResults = await Promise.all(deletePromises);
+
+    res.status(200).json({ deletions: deleteResults });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to delete team members",
+      stack: error.stack,
+    });
+  }
+});
+
 // Find teams by event
 router.get("/teams/event/:eventId", async (req, res) => {
   const eventId = req.params.eventId;
