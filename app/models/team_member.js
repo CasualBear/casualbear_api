@@ -8,7 +8,12 @@ module.exports = (sequelize, DataTypes) => {
     email: DataTypes.STRING,
     nosCard: DataTypes.STRING,
     tShirtSize: DataTypes.STRING,
-
+    isCheckedPrivacyData: DataTypes.BOOLEAN,
+    isCheckedTermsConditions: DataTypes.BOOLEAN,
+    isCheckedOverall: DataTypes.BOOLEAN,
+    isCaptain: DataTypes.BOOLEAN,
+    isVerified: DataTypes.BOOLEAN,
+    isCheckedIn: DataTypes.BOOLEAN,
     teamId: DataTypes.STRING, // Add the teamId column
   });
 

@@ -4,24 +4,19 @@ const { registerValidation, loginValidation } = require("../validation");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
+const sgMail = require("@sendgrid/mail");
 
 router.post("/register", async (req, res) => {
   // execute Query
   try {
-    // Create a transporter object with your email service provider details
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: "nobre@casualbear.io",
-        pass: "Lol08lol!!",
-      },
-    });
+    sgMail.setApiKey(
+      "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"
+    );
 
-    // Define the email content
-    const mailOptions = {
-      from: "nobre@casualbear.io",
+    const msg = {
       to: req.body.email,
-      subject: "Test Email",
+      from: "nobre@casualbear.io",
+      subject: "Access Credentials",
       text:
         "Welcome. This are your credentials. Email: " +
         req.body.email +
@@ -29,14 +24,14 @@ router.post("/register", async (req, res) => {
         req.body.password,
     };
 
-    // Send the email
-    transporter.sendMail(mailOptions, function (error, info) {
-      if (error) {
-        console.log(error);
-      } else {
-        console.log("Email sent: " + info.response);
-      }
-    });
+    sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+      })
+      .catch((error) => {
+        console.error(error);
+      });
 
     // hash the password
     const salt = await bcrypt.genSaltSync(10);

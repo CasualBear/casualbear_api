@@ -1,3 +1,5 @@
+const { Sequelize } = require("sequelize"); // Import Sequelize object
+
 module.exports = {
   up: (queryInterface, DataTypes) => {
     return queryInterface.createTable("TeamMembers", {
@@ -30,6 +32,36 @@ module.exports = {
       address: {
         allowNull: false,
         type: DataTypes.STRING, // Define the new teamId column
+      },
+      isCheckedPrivacyData: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      isCheckedTermsConditions: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      isCheckedOverall: {
+        type: Sequelize.BOOLEAN,
+        allowNull: true,
+        defaultValue: false,
+      },
+      isCaptain: {
+        type: Sequelize.BOOLEAN,
+        allowNull: true,
+        defaultValue: false,
+      },
+      isVerified: {
+        type: Sequelize.BOOLEAN,
+        allowNull: true,
+        defaultValue: false,
+      },
+      isCheckedIn: {
+        type: Sequelize.BOOLEAN,
+        allowNull: true,
+        defaultValue: false,
       },
       email: {
         allowNull: false,
