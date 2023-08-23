@@ -289,7 +289,10 @@ router.post("/team-members", async (req, res) => {
 
   try {
     const createdTeamMembers = [];
-    const teamId = uuidv4(); // Generate a random team ID
+    const randomNumber = Math.floor(Math.random() * 100000);
+
+    // Convert the random number to a string and pad it with zeros if needed
+    const teamId = randomNumber.toString().padStart(5, "0");
     for (const teamMemberData of teamMembersData) {
       const newTeamMember = await TeamMember.create({
         ...teamMemberData,
