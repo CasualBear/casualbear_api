@@ -1,9 +1,8 @@
-const { Event, TeamMember, Question } = require("../app/models");
+const { Event, Question } = require("../app/models");
 const router = require("express").Router();
 const path = require("path");
 const AWS = require("aws-sdk");
 const multer = require("multer");
-const { v4: uuidv4 } = require("uuid");
 
 // Set up Multer for handling file uploads
 const storage = multer.diskStorage({
@@ -165,11 +164,6 @@ router.get("/events/:eventId", async (req, res) => {
           model: Question,
           as: "questions",
         },
-        {
-          model: TeamMember,
-          as: "teams",
-          attributes: ["teamId"], // Include only the team ID
-        },
       ],
     });
 
@@ -179,14 +173,12 @@ router.get("/events/:eventId", async (req, res) => {
 
     // Parse the zones field as a JSON array
     const parsedZones = JSON.parse(event.zones);
-    const uniqueTeamIds = [...new Set(event.teams.map((team) => team.teamId))];
     const eventWithParsedZones = {
       ...event.toJSON(),
       zones: parsedZones.map((zone) => ({
         name: zone.name,
         active: zone.active,
       })),
-      teams: uniqueTeamIds,
     };
 
     // Parse the answers field as a JSON array for each question
@@ -280,191 +272,6 @@ router.put("/events/:eventId", upload.single("iconFile"), async (req, res) => {
   } catch (error) {
     console.error("Error updating event:", error);
     res.status(500).json({ error: "Failed to update event" });
-  }
-});
-
-// add teams to the event
-router.post("/team-members", async (req, res) => {
-  const teamMembersData = req.body;
-
-  try {
-    const createdTeamMembers = [];
-    const randomNumber = Math.floor(Math.random() * 100000);
-
-    // Convert the random number to a string and pad it with zeros if needed
-    const teamId = randomNumber.toString().padStart(5, "0");
-    for (const teamMemberData of teamMembersData) {
-      const newTeamMember = await TeamMember.create({
-        ...teamMemberData,
-        teamId, // Assign the generated team ID to the teamId column
-      });
-      createdTeamMembers.push(newTeamMember);
-    }
-
-    const event = await Event.findOne(); // Adjust the conditions to find the appropriate event
-
-    await Promise.all(
-      createdTeamMembers.map((teamMember) => teamMember.setEvent(event))
-    );
-
-    res.status(201).json(createdTeamMembers);
-  } catch (error) {
-    res.status(500).json({
-      error: "Failed to retrieve team members",
-      stack: error.stack, // Include the stack trace in the response
-    });
-  }
-});
-
-// update the statuses of the team
-router.put("/team-members", async (req, res) => {
-  const updates = req.body;
-
-  try {
-    const updatePromises = updates.map(async (update) => {
-      const { id, isVerified, isCheckedIn } = update;
-
-      const teamMember = await TeamMember.findByPk(id);
-
-      if (!teamMember) {
-        return { id, status: "Team member not found" };
-      }
-
-      if (isVerified !== undefined) {
-        teamMember.isVerified = isVerified;
-      }
-
-      if (isCheckedIn !== undefined) {
-        teamMember.isCheckedIn = isCheckedIn;
-      }
-
-      await teamMember.save();
-
-      return { id, status: "Updated successfully" };
-    });
-
-    const updateResults = await Promise.all(updatePromises);
-
-    res.status(200).json({ updates: updateResults });
-  } catch (error) {
-    res.status(500).json({
-      error: "Failed to update team members",
-      stack: error.stack,
-    });
-  }
-});
-
-router.delete("/team-members", async (req, res) => {
-  const { memberIds } = req.body;
-
-  try {
-    const deletePromises = memberIds.map(async (id) => {
-      const teamMember = await TeamMember.findByPk(id);
-
-      if (!teamMember) {
-        return { id, status: "Team member not found" };
-      }
-
-      await teamMember.destroy();
-
-      return { id, status: "Deleted successfully" };
-    });
-
-    const deleteResults = await Promise.all(deletePromises);
-
-    res.status(200).json({ deletions: deleteResults });
-  } catch (error) {
-    res.status(500).json({
-      error: "Failed to delete team members",
-      stack: error.stack,
-    });
-  }
-});
-
-// Find teams by event
-router.get("/teams/event/:eventId", async (req, res) => {
-  const eventId = req.params.eventId;
-
-  try {
-    const event = await Event.findByPk(eventId, {
-      include: {
-        model: TeamMember,
-        as: "TeamMembers",
-      },
-    });
-
-    if (!event) {
-      return res.status(404).json({ error: "Event not found" });
-    }
-
-    const teams = event.TeamMembers.reduce((teams, teamMember) => {
-      const { teamId, firstName, lastName, email } = teamMember;
-      const existingTeam = teams.find((team) => team.teamId === teamId);
-
-      if (!existingTeam) {
-        teams.push({
-          teamId,
-          members: [],
-        });
-      }
-
-      const team = teams.find((team) => team.teamId === teamId);
-      team.members.push({
-        firstName,
-        lastName,
-        email,
-      });
-
-      return teams;
-    }, []);
-
-    res.status(200).json({ teams });
-  } catch (error) {
-    console.error("Error retrieving teams:", error);
-    res.status(500).json({ error: "Failed to retrieve teams" });
-  }
-});
-
-// Find users by team
-router.get("/team-members/:teamId", async (req, res) => {
-  const teamId = req.params.teamId;
-
-  try {
-    const teamMembers = await TeamMember.findAll({
-      where: {
-        teamId: teamId,
-      },
-    });
-
-    res.status(200).json(teamMembers);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to retrieve team members" });
-  }
-});
-
-// Find users by event
-router.get("/team-members/event/:eventId", async (req, res) => {
-  const eventId = req.params.eventId;
-
-  try {
-    const event = await Event.findByPk(eventId, {
-      include: {
-        model: TeamMember,
-        as: "TeamMembers", // Make sure to use the correct alias for the association
-      },
-    });
-
-    if (!event) {
-      return res.status(404).json({ error: "Event not found" });
-    }
-
-    const teamMembers = event.TeamMembers;
-    res.status(200).json(teamMembers);
-  } catch (error) {
-    res.status(500).json({
-      error: "Failed to retrieve team members",
-      stack: error.stack, // Include the stack trace in the response
-    });
   }
 });
 

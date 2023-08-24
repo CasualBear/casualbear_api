@@ -6,9 +6,6 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   Answer.associate = function (models) {
-    Answer.belongsTo(models.TeamMember, {
-      foreignKey: "teamMemberId",
-    });
     Answer.belongsTo(models.Question, {
       foreignKey: "questionId",
     });

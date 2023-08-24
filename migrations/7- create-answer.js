@@ -31,16 +31,6 @@ module.exports = {
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
       },
-      teamMemberId: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: "TeamMembers",
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "CASCADE",
-      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,

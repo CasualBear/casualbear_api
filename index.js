@@ -14,6 +14,7 @@ const io = require("socket.io")(httpServer, {
 const authRoute = require("./routes/auth");
 const eventRoute = require("./routes/event");
 const answersRouter = require("./routes/answer");
+const teamsRouter = require("./routes/team");
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ app.use(
 );
 
 app.use("/api/answers", answersRouter);
+app.use("/api/teams", teamsRouter);
 
 // Start the server
 httpServer.listen(process.env.PORT || 8000, () => {

@@ -1,6 +1,3 @@
-/*
-User is someone that is signed up but does have a password to login.
-*/
 module.exports = {
   up: (queryInterface, DataTypes) => {
     return queryInterface.createTable("Users", {
@@ -14,21 +11,69 @@ module.exports = {
         allowNull: false,
         type: DataTypes.STRING,
       },
-      email: {
-        allowNull: false,
+      dateOfBirth: {
+        allowNull: true,
+        type: DataTypes.STRING, // You might want to use DataTypes.DATE if storing a date.
+      },
+      cc: {
+        allowNull: true,
         type: DataTypes.STRING,
       },
-      role: {
+      phone: {
         allowNull: true,
+        type: DataTypes.STRING,
+      },
+      address: {
+        allowNull: true,
+        type: DataTypes.STRING,
+      },
+      email: {
+        allowNull: false,
         type: DataTypes.STRING,
       },
       password: {
         allowNull: false,
         type: DataTypes.STRING,
       },
-      zones: {
+      nosCard: {
+        allowNull: true,
         type: DataTypes.STRING,
+      },
+      tShirtSize: {
+        allowNull: true,
+        type: DataTypes.STRING,
+      },
+      isCheckedPrivacyData: {
         allowNull: false,
+        type: DataTypes.BOOLEAN,
+      },
+      isCheckedTermsConditions: {
+        allowNull: false,
+        type: DataTypes.BOOLEAN,
+      },
+      isCheckedOverall: {
+        allowNull: false,
+        type: DataTypes.BOOLEAN,
+      },
+      isCaptain: {
+        allowNull: false,
+        type: DataTypes.BOOLEAN,
+      },
+      isVerified: {
+        allowNull: false,
+        type: DataTypes.BOOLEAN,
+      },
+      role: {
+        allowNull: true,
+        type: DataTypes.STRING,
+      },
+      isCheckedIn: {
+        allowNull: false,
+        type: DataTypes.BOOLEAN,
+      },
+      teamId: {
+        allowNull: true,
+        type: DataTypes.STRING,
       },
       createdAt: {
         allowNull: false,
@@ -37,6 +82,10 @@ module.exports = {
       updatedAt: {
         allowNull: false,
         type: DataTypes.DATE,
+      },
+      event_id: {
+        allowNull: true,
+        type: DataTypes.INTEGER, // You might want to adjust the data type accordingly.
       },
     });
   },
