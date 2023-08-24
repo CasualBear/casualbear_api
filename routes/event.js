@@ -87,18 +87,11 @@ router.post("/upload-event", upload.single("iconFile"), async (req, res) => {
 
     const selectedColorInt = parseInt(req.body.selectedColor);
 
-    const zones = [
-      { name: "ZoneA", active: true },
-      { name: "ZoneB", active: false },
-      { name: "ZoneC", active: false },
-    ];
-
     const event = await Event.create({
       name: req.body.name,
       description: req.body.description,
       selectedColor: selectedColorInt,
       rawUrl: s3Url,
-      zones: JSON.stringify(zones),
     });
 
     res.status(201).json(event);
@@ -118,35 +111,7 @@ router.get("/events", async (req, res) => {
       },
     });
 
-    // Parse the zones field as a JSON array for each event
-    const eventsWithParsedZones = events.map((event) => {
-      const parsedZones = JSON.parse(event.zones);
-      return {
-        ...event.toJSON(),
-        zones: parsedZones.map((zone) => ({
-          name: zone.name,
-          active: zone.active,
-        })),
-      };
-    });
-
-    // Parse the answers field as a JSON array for each question in each event
-    const eventsWithParsedQuestions = eventsWithParsedZones.map((event) => {
-      const parsedQuestions = (event.questions || []).map((question) => {
-        const parsedAnswers = JSON.parse(question.answers);
-        return {
-          ...question,
-          answers: parsedAnswers,
-        };
-      });
-
-      return {
-        ...event,
-        questions: parsedQuestions,
-      };
-    });
-
-    res.status(200).json({ events: eventsWithParsedQuestions });
+    res.status(200).json({ events: events });
   } catch (error) {
     console.error("Error retrieving events:", error);
     res.status(500).json({ error: "Failed to retrieve events" });
@@ -171,30 +136,7 @@ router.get("/events/:eventId", async (req, res) => {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    // Parse the zones field as a JSON array
-    const parsedZones = JSON.parse(event.zones);
-    const eventWithParsedZones = {
-      ...event.toJSON(),
-      zones: parsedZones.map((zone) => ({
-        name: zone.name,
-        active: zone.active,
-      })),
-    };
-
-    // Parse the answers field as a JSON array for each question
-    const parsedQuestions = (eventWithParsedZones.questions || []).map(
-      (question) => {
-        const parsedAnswers = JSON.parse(question.answers);
-        return {
-          ...question,
-          answers: parsedAnswers,
-        };
-      }
-    );
-
-    eventWithParsedZones.questions = parsedQuestions;
-
-    res.status(200).json({ event: eventWithParsedZones });
+    res.status(200).json({ event: event });
   } catch (error) {
     console.error("Error retrieving event:", error);
     res.status(500).json({ error: "Failed to retrieve event" });
