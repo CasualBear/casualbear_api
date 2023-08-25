@@ -3,6 +3,7 @@ module.exports = (sequelize, DataTypes) => {
     question: DataTypes.STRING,
     answers: DataTypes.TEXT,
     correctAnswerIndex: DataTypes.INTEGER,
+    points: DataTypes.INTEGER,
     zone: DataTypes.STRING,
     latitude: DataTypes.STRING,
     longitude: DataTypes.STRING,

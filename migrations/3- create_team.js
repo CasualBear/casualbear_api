@@ -11,6 +11,10 @@ module.exports = {
         allowNull: false,
         type: DataTypes.STRING,
       },
+      totalPoints: {
+        allowNull: false,
+        type: DataTypes.INTEGER,
+      },
       zones: {
         type: DataTypes.TEXT, // Use TEXT data type for JSON-like data
         allowNull: false,

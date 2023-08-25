@@ -4,7 +4,6 @@ module.exports = (sequelize, DataTypes) => {
     description: DataTypes.STRING,
     selectedColor: DataTypes.BIGINT,
     rawUrl: DataTypes.STRING,
-    zones: DataTypes.STRING, // Add the 'zones' field
   });
 
   Event.associate = function (models) {

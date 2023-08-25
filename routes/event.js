@@ -333,61 +333,6 @@ router.delete("/questions/:questionId", async (req, res) => {
   }
 });
 
-// update zone from event
-
-router.put("/events/:eventId/zones/:zoneName", async (req, res) => {
-  const { eventId, zoneName } = req.params;
-  const { state } = req.body;
-
-  try {
-    const event = await Event.findByPk(eventId);
-
-    if (!event) {
-      return res.status(404).json({ error: "Zone not found" });
-    }
-
-    let zones = [];
-    try {
-      zones = JSON.parse(event.zones);
-    } catch (error) {
-      console.error("Error parsing zones:", error);
-    }
-
-    // Find the zone with the matching zoneName
-    const zoneToUpdate = zones.find((zone) => zone.name === zoneName);
-
-    if (!zoneToUpdate) {
-      return res.status(404).json({ error: "Zone not found" });
-    }
-
-    // Update the 'active' property of the zone based on the state value
-    zoneToUpdate.active = state === "active";
-
-    // Update the zones in the event
-    event.zones = JSON.stringify(zones);
-    await event.save();
-
-    // Emit the updated zone and its state to all connected clients
-    /*req.io.emit("zoneUpdate", {
-      zone: zoneToUpdate.name,
-      active: zoneToUpdate.active,
-    });*/
-
-    req.io.emit(
-      "zoneUpdate",
-      JSON.stringify({
-        zone: zoneToUpdate.name,
-        active: zoneToUpdate.active,
-      })
-    );
-
-    res.status(200).json({ message: "Zone state updated successfully" });
-  } catch (error) {
-    console.error("Error updating zone state:", error);
-    res.status(500).json({ error: "Failed to update zone state" });
-  }
-});
-
 // Get questions by zone and event ID
 router.get("/questions/:eventId/:zoneName", async (req, res) => {
   try {

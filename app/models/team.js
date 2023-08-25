@@ -6,6 +6,7 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       type: DataTypes.INTEGER,
     },
+    totalPoints: DataTypes.INTEGER,
     name: {
       allowNull: false,
       type: DataTypes.STRING,

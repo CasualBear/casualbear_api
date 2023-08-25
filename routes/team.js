@@ -18,7 +18,7 @@ router.post("/events/:eventId/teams", async (req, res) => {
   const zonesAsString = JSON.stringify(predefinedZones);
 
   const eventId = req.params.eventId;
-  const { name, users } = req.body;
+  const { users } = req.body;
 
   try {
     const event = await Event.findByPk(eventId);
@@ -27,6 +27,7 @@ router.post("/events/:eventId/teams", async (req, res) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
+    var name = generateRandomNumber();
     const team = await Team.create({ name, eventId, zones: zonesAsString });
 
     req.body.teamId = team.id;
@@ -115,6 +116,33 @@ router.get("/events/:eventId/teams", async (req, res) => {
   }
 });
 
+// Update user's isVerified and isCheckedIn
+router.put("/users", async (req, res) => {
+  const userUpdates = req.body;
+
+  try {
+    for (const update of userUpdates) {
+      const { userId, isVerified, isCheckedIn } = update;
+      const user = await User.findByPk(userId);
+
+      if (!user) {
+        return res
+          .status(404)
+          .json({ message: `User with ID ${userId} not found` });
+      }
+
+      user.isVerified = isVerified;
+      user.isCheckedIn = isCheckedIn;
+      await user.save();
+    }
+
+    return res.status(200).json({ message: "Users updated successfully" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // PUT update zones status by team ID
 router.put("/teams/:teamId/zones", async (req, res) => {
   const teamId = req.params.teamId;
@@ -170,6 +198,10 @@ function generateRandomPassword(length) {
     password += charset[randomIndex];
   }
   return password;
+}
+
+function generateRandomNumber() {
+  return Math.floor(10000 + Math.random() * 90000);
 }
 
 module.exports = router;

@@ -25,10 +25,6 @@ module.exports = {
           type: DataTypes.STRING,
           allowNull: false,
         },
-        zones: {
-          type: DataTypes.STRING,
-          allowNull: false,
-        },
         createdAt: {
           type: DataTypes.DATE,
           allowNull: false,
@@ -59,6 +55,10 @@ module.exports = {
             allowNull: true,
           },
           correctAnswerIndex: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+          },
+          points: {
             type: DataTypes.INTEGER,
             allowNull: false,
           },
