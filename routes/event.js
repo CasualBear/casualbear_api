@@ -1,4 +1,4 @@
-const { Event, Question, Team } = require("../app/models");
+const { Event, Question, Team, Answer } = require("../app/models");
 const router = require("express").Router();
 const path = require("path");
 const AWS = require("aws-sdk");
@@ -108,6 +108,9 @@ router.get("/events", async (req, res) => {
       include: {
         model: Question,
         as: "questions",
+        include: {
+          model: Answer,
+        },
       },
     });
 

@@ -1,7 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
   const Question = sequelize.define("Question", {
     question: DataTypes.STRING,
-    answers: DataTypes.TEXT,
     correctAnswerIndex: DataTypes.INTEGER,
     points: DataTypes.INTEGER,
     zone: DataTypes.STRING,
