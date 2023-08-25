@@ -77,8 +77,6 @@ router.post("/login", async (req, res) => {
       ],
     });
 
-    if (!team) return res.status(404).send("Team not found");
-
     // create and assign a token
     const token = jwt.sign({ id: user.id }, "KEY_TO_SIGN_TOKEN");
     res.status(200).send({
