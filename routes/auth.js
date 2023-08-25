@@ -1,6 +1,5 @@
-const { User } = require("../app/models");
+const { User, Team } = require("../app/models");
 const router = require("express").Router();
-const { registerValidation, loginValidation } = require("../validation");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
@@ -48,30 +47,46 @@ router.post("/register", async (req, res) => {
 
 // login
 router.post("/login", async (req, res) => {
-  // validation
-  const { error } = loginValidation(req.body);
-  if (error) return res.status(400).send(error.details[0].message);
-
   try {
-    const user = await User.findAll({
+    const user = await User.findOne({
       where: {
         email: req.body.email,
       },
     });
 
-    if (user.length === 0) return res.status(400).send("Email is wrong");
+    if (!user) return res.status(400).send("Email is wrong");
 
     // check if password is correct
     const validPassword = await bcrypt.compare(
       req.body.password,
-      user[0].password
+      user.password
     );
 
     if (!validPassword) return res.status(400).send("Password is wrong");
 
+    // Find the team of the user and all members
+    const team = await Team.findOne({
+      where: {
+        id: user.teamId,
+      },
+      include: [
+        {
+          model: User,
+          as: "members",
+        },
+      ],
+    });
+
+    if (!team) return res.status(404).send("Team not found");
+
     // create and assign a token
-    const token = jwt.sign({ id: user[0].id }, "KEY_TO_SIGN_TOKEN");
-    res.status(200).send({ auth: true, token: token, role: user[0].role });
+    const token = jwt.sign({ id: user.id }, "KEY_TO_SIGN_TOKEN");
+    res.status(200).send({
+      auth: true,
+      token: token,
+      role: user.role,
+      team: team,
+    });
   } catch (error) {
     res.status(400).send(error);
   }

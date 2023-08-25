@@ -51,26 +51,16 @@ module.exports = {
         allowNull: false,
         type: DataTypes.BOOLEAN,
       },
-      isCheckedOverall: {
-        allowNull: false,
-        type: DataTypes.BOOLEAN,
-      },
       isCaptain: {
         allowNull: false,
         type: DataTypes.BOOLEAN,
       },
-      isVerified: {
-        allowNull: false,
-        type: DataTypes.BOOLEAN,
-      },
+
       role: {
         allowNull: true,
         type: DataTypes.STRING,
       },
-      isCheckedIn: {
-        allowNull: false,
-        type: DataTypes.BOOLEAN,
-      },
+
       teamId: {
         allowNull: true,
         type: DataTypes.STRING,

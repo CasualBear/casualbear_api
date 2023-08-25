@@ -11,9 +11,25 @@ module.exports = {
         allowNull: false,
         type: DataTypes.STRING,
       },
+      timeSpent: {
+        allowNull: false,
+        type: DataTypes.BIGINT,
+      },
       totalPoints: {
         allowNull: false,
         type: DataTypes.INTEGER,
+      },
+      isCheckedOverall: {
+        allowNull: false,
+        type: DataTypes.BOOLEAN,
+      },
+      isVerified: {
+        allowNull: false,
+        type: DataTypes.STRING, //Validating, approved, denied
+      },
+      isCheckedIn: {
+        allowNull: false,
+        type: DataTypes.BOOLEAN,
       },
       zones: {
         type: DataTypes.TEXT, // Use TEXT data type for JSON-like data

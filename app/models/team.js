@@ -11,6 +11,13 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       type: DataTypes.STRING,
     },
+    isCheckedOverall: DataTypes.BOOLEAN,
+    isVerified: DataTypes.STRING,
+    isCheckedIn: DataTypes.BOOLEAN,
+    timeSpent: {
+      allowNull: true, // You can set this to false if timeSpent is always required
+      type: DataTypes.BIGINT, // Using INTEGER for milliseconds
+    },
     zones: {
       type: DataTypes.TEXT,
       allowNull: false,

@@ -234,6 +234,7 @@ router.post("/events/:eventId/questions", async (req, res) => {
     answers,
     correctAnswerIndex,
     zone,
+    points,
     latitude,
     longitude,
     address,
@@ -243,28 +244,35 @@ router.post("/events/:eventId/questions", async (req, res) => {
     const event = await Event.findByPk(eventId);
 
     if (!event) {
-      return res.status(404).json({ error: "Question not added" });
-    }
-
-    let serializedAnswers = null;
-
-    if (answers) {
-      serializedAnswers = answers.map((answer, index) => ({
-        index: index,
-        answer: answer,
-      }));
+      return res.status(404).json({ error: "Event not found" });
     }
 
     const newQuestion = await Question.create({
       question,
-      answers: serializedAnswers ? JSON.stringify(serializedAnswers) : null,
       correctAnswerIndex,
-      zone, // Save the zone as a single string
+      zone,
       latitude,
       longitude,
       address,
+      points,
       eventId,
     });
+
+    const savedAnswers = [];
+
+    // Loop through the answers and associate them with the question
+    for (const a of answers) {
+      const { answer } = a;
+
+      const savedAnswer = await Answer.create({
+        answer: answer,
+        questionId: newQuestion.id, // Associate the answer with the new question
+      });
+
+      savedAnswers.push(savedAnswer);
+    }
+
+    newQuestion.setAnswers(savedAnswers); // Associate all saved answers with the new question
 
     res.status(201).json(newQuestion);
   } catch (error) {
@@ -281,41 +289,55 @@ router.put("/questions/:questionId", async (req, res) => {
     answers,
     correctAnswerIndex,
     zone,
+    points,
     latitude,
     longitude,
     address,
   } = req.body;
 
   try {
-    const existingQuestion = await Question.findByPk(questionId);
+    // Find the question by its ID
+    const existingQuestion = await Question.findByPk(questionId, {
+      include: Answer, // Include associated answers
+    });
 
     if (!existingQuestion) {
       return res.status(404).json({ error: "Question not found" });
     }
 
-    let serializedAnswers = null;
+    // Update question details
+    existingQuestion.question = question;
+    existingQuestion.correctAnswerIndex = correctAnswerIndex;
+    existingQuestion.zone = zone;
+    existingQuestion.latitude = latitude;
+    existingQuestion.points = points;
+    existingQuestion.longitude = longitude;
+    existingQuestion.address = address;
 
-    if (answers) {
-      serializedAnswers = answers.map((answer, index) => ({
-        index: index,
+    // Remove existing answers associated with the question
+    await existingQuestion.setAnswers([]);
+
+    const savedAnswers = [];
+
+    // Loop through the new answers and associate them with the question
+    for (const a of answers) {
+      const { answer } = a;
+
+      const savedAnswer = await Answer.create({
         answer: answer,
-      }));
+        questionId: existingQuestion.id,
+      });
+
+      savedAnswers.push(savedAnswer);
     }
 
-    await existingQuestion.update({
-      question: question || existingQuestion.question,
-      answers: serializedAnswers
-        ? JSON.stringify(serializedAnswers)
-        : existingQuestion.answers,
-      correctAnswerIndex:
-        correctAnswerIndex || existingQuestion.correctAnswerIndex,
-      zone: zone || existingQuestion.zone,
-      latitude: latitude || existingQuestion.latitude,
-      longitude: longitude || existingQuestion.longitude,
-      address: address || existingQuestion.address,
-    });
+    // Associate the new answers with the question
+    await existingQuestion.setAnswers(savedAnswers);
 
-    res.status(200).json({ message: "Question updated successfully" });
+    // Save the updated question
+    await existingQuestion.save();
+
+    res.status(200).json(existingQuestion);
   } catch (error) {
     console.error("Error updating question:", error);
     res.status(500).json({ error: "Failed to update question" });
@@ -327,44 +349,55 @@ router.delete("/questions/:questionId", async (req, res) => {
   const { questionId } = req.params;
 
   try {
-    const question = await Question.findByPk(questionId);
+    // Find the question by its ID
+    const existingQuestion = await Question.findByPk(questionId);
 
-    if (!question) {
+    if (!existingQuestion) {
       return res.status(404).json({ error: "Question not found" });
     }
 
-    await question.destroy();
+    // Delete the associated answers first
+    await Answer.destroy({
+      where: {
+        questionId: questionId,
+      },
+    });
 
-    res.status(200).json({ message: "Question deleted successfully" });
+    // Delete the question itself
+    await existingQuestion.destroy();
+
+    res.status(200).json({
+      message: "Question and associated answers deleted successfully",
+    });
   } catch (error) {
     console.error("Error deleting question:", error);
     res.status(500).json({ error: "Failed to delete question" });
   }
 });
-
 // Get questions by zone and event ID
-router.get("/questions/:eventId/:zoneName", async (req, res) => {
-  try {
-    const { eventId, zoneName } = req.params;
+router.get("/events/:eventId/questions/:zone", async (req, res) => {
+  const { eventId, zone } = req.params;
 
-    // Find the event by its ID in the database
-    const event = await Event.findByPk(eventId, {
-      include: {
-        model: Question,
-        as: "questions",
-        where: { zone: zoneName },
-      },
-    });
+  try {
+    // Find the event by its ID
+    const event = await Event.findByPk(eventId);
 
     if (!event) {
-      return res.status(404).json({ error: "Questions not found" });
+      return res.status(404).json({ error: "Event not found" });
     }
 
-    const questions = event.questions;
+    // Retrieve questions for the specified event and zone
+    const questions = await Question.findAll({
+      where: {
+        eventId: eventId,
+        zone: zone,
+      },
+      include: Answer, // Include associated answers
+    });
 
-    res.status(200).json({ questions });
+    res.status(200).json({ questions: questions });
   } catch (error) {
-    console.error("Error retrieving questions by zone and event ID:", error);
+    console.error("Error retrieving questions:", error);
     res.status(500).json({ error: "Failed to retrieve questions" });
   }
 });

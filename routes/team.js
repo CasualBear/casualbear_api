@@ -117,26 +117,38 @@ router.get("/events/:eventId/teams", async (req, res) => {
 });
 
 // Update user's isVerified and isCheckedIn
-router.put("/users", async (req, res) => {
-  const userUpdates = req.body;
+router.put("/team-flags", async (req, res) => {
+  const teamUpdates = req.body;
 
   try {
-    for (const update of userUpdates) {
-      const { userId, isVerified, isCheckedIn } = update;
-      const user = await User.findByPk(userId);
+    for (const update of teamUpdates) {
+      const { teamId, isVerified, isCheckedIn } = update;
+      const team = await Team.findByPk(teamId);
 
-      if (!user) {
+      if (!team) {
         return res
           .status(404)
-          .json({ message: `User with ID ${userId} not found` });
+          .json({ message: `Team with ID ${teamId} not found` });
       }
 
-      user.isVerified = isVerified;
-      user.isCheckedIn = isCheckedIn;
-      await user.save();
+      // Assuming `verificationStatus` can be "Validating", "Approved", or "Denied"
+      if (
+        isVerified === "Validating" ||
+        isVerified === "Approved" ||
+        isVerified === "Denied"
+      ) {
+        team.isVerified = isVerified;
+      } else {
+        return res.status(400).json({
+          message: `Invalid verification status: ${isVerified}`,
+        });
+      }
+
+      team.isCheckedIn = isCheckedIn;
+      await team.save();
     }
 
-    return res.status(200).json({ message: "Users updated successfully" });
+    return res.status(200).json({ message: "Team updated successfully" });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Internal server error" });

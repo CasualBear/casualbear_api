@@ -12,9 +12,6 @@ module.exports = (sequelize, DataTypes) => {
     tShirtSize: DataTypes.STRING,
     isCheckedPrivacyData: DataTypes.BOOLEAN,
     isCheckedTermsConditions: DataTypes.BOOLEAN,
-    isCheckedOverall: DataTypes.BOOLEAN,
-    isVerified: DataTypes.BOOLEAN,
-    isCheckedIn: DataTypes.BOOLEAN,
     isCaptain: DataTypes.BOOLEAN,
 
     teamId: {

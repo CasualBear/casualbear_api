@@ -1,136 +1,62 @@
 const express = require("express");
 const router = express.Router();
-const { Answer, Question, TeamMember, Event } = require("../app/models");
+const { Answer, Question, Team, Event } = require("../app/models");
 
-router.post("/", async (req, res) => {
-  const { teamId, questionId, answer, answerIndex, time } = req.body;
+router.post("/answer-question", async (req, res) => {
+  const { teamId, questionId, answerIndex, timeSpent } = req.body;
 
   try {
+    // Find the team by its ID
+    const team = await Team.findByPk(teamId);
+
+    if (!team) {
+      return res.status(404).json({ error: "Team not found" });
+    }
+
+    // Find the question by its ID
     const question = await Question.findByPk(questionId);
-    const teamMembers = await TeamMember.findAll({
-      where: {
-        teamId: teamId,
-      },
-    });
 
-    if (!question || !teamMembers.length) {
-      return res.status(404).json({ error: "Question or team not found" });
+    if (!question) {
+      return res.status(404).json({ error: "Question not found" });
     }
 
-    let isAnyAnswerCorrect = false;
+    // Check if the provided answer index matches the correctAnswerIndex
+    if (parseInt(answerIndex) === question.correctAnswerIndex) {
+      // Update the team's total points based on the question's points
+      team.totalPoints += question.points;
 
-    for (const teamMember of teamMembers) {
-      const existingAnswer = await Answer.findOne({
-        where: {
-          teamMemberId: teamMember.id,
-          questionId: questionId,
-        },
-      });
-
-      if (existingAnswer) {
-        // Team has already answered this question
-        return res.status(400).json({ error: "Question already answered" });
+      // Update the team's time spent
+      if (timeSpent) {
+        team.timeSpent += timeSpent;
+      } else {
+        team.timeSpent = timeSpent;
       }
 
-      const isCorrect = question.correctAnswerIndex === (answer || answerIndex);
+      await team.save();
 
-      await Answer.create({
-        answer: answer || answerIndex,
-        questionId,
-        teamMemberId: teamMember.id,
-        isCorrect,
-        time: time,
-      });
-
-      if (isCorrect) {
-        isAnyAnswerCorrect = true;
-        teamMember.points = (teamMember.points || 0) + 1;
-        await teamMember.save();
-      }
-    }
-
-    if (isAnyAnswerCorrect) {
-      res.status(200).json({ message: "Answer is correct" });
+      res.status(200).json({ message: "Answer is correct. Points awarded." });
     } else {
-      res.status(200).json({ message: "Answer is incorrect" });
+      res
+        .status(200)
+        .json({ message: "Answer is incorrect. No points awarded." });
     }
   } catch (error) {
-    console.error("Error creating answer:", error);
-    res.status(500).json({ error: "Failed to create answer" });
+    console.error("Error answering question:", error);
+    res.status(500).json({ error: "Failed to answer question" });
   }
 });
-router.get("/teams/event/:eventId", async (req, res) => {
-  const eventId = req.params.eventId;
 
+router.get("/teams", async (req, res) => {
   try {
-    const event = await Event.findByPk(eventId, {
-      include: {
-        model: TeamMember,
-        as: "TeamMembers",
-        include: [
-          {
-            model: Answer,
-            attributes: ["id", "answer", "isCorrect", "time"],
-            include: {
-              model: Question,
-              attributes: ["id", "correctAnswerIndex"],
-            },
-          },
-          {
-            model: Event,
-            attributes: [],
-            where: { id: eventId },
-          },
-        ],
-      },
+    // Retrieve all teams from the database, ordered by points and timeSpent
+    const teams = await Team.findAll({
+      order: [
+        ["totalPoints", "DESC"], // Order by points in descending order
+        ["timeSpent", "ASC"], // If points are the same, order by timeSpent in ascending order
+      ],
     });
 
-    if (!event) {
-      return res.status(404).json({ error: "Event not found" });
-    }
-
-    const teams = {};
-
-    for (const teamMember of event.TeamMembers) {
-      const { teamId } = teamMember;
-      if (!teams[teamId]) {
-        teams[teamId] = {
-          teamId,
-          correctAnswerIds: new Set(),
-          totalTime: 0,
-          answerCount: 0,
-          totalTeamMembers: 0,
-        };
-      }
-
-      // Accumulate the total time and count the answers for each team
-      teams[teamId].totalTime += teamMember.Answers.reduce(
-        (total, answer) => total + answer.time,
-        0
-      );
-      teams[teamId].answerCount += teamMember.Answers.length;
-      teams[teamId].totalTeamMembers += 1;
-
-      // If the answer is correct, add its id to the Set of correctAnswerIds
-      teamMember.Answers.forEach((answer) => {
-        if (answer.isCorrect) {
-          teams[teamId].correctAnswerIds.add(answer.id);
-        }
-      });
-    }
-
-    // Calculate the average time and number of correct answers per team participant and format the response
-    const formattedTeams = Object.values(teams).map((team) => ({
-      teamId: team.teamId,
-      averageTimeSeconds:
-        team.answerCount > 0 ? team.totalTime / team.answerCount : 0,
-      score:
-        team.totalTeamMembers > 0
-          ? team.correctAnswerIds.size / team.totalTeamMembers
-          : 0,
-    }));
-
-    res.status(200).json({ teams: formattedTeams });
+    res.status(200).json({ teams: teams });
   } catch (error) {
     console.error("Error retrieving teams:", error);
     res.status(500).json({ error: "Failed to retrieve teams" });
