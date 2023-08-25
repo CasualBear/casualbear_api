@@ -139,13 +139,19 @@ router.get("/events/:eventId", async (req, res) => {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    // find teams inside event
+    // Find teams inside the event
     const teams = await Team.findAll({
       where: { eventId }, // Fetch teams where eventId matches
       include: "members", // Include associated users/members
     });
 
-    res.status(200).json({ event: event, teams: teams });
+    // Include teams within the event object
+    const eventWithTeams = {
+      ...event.toJSON(),
+      teams: teams,
+    };
+
+    res.status(200).json({ event: eventWithTeams });
   } catch (error) {
     console.error("Error retrieving event:", error);
     res.status(500).json({ error: "Failed to retrieve event" });
