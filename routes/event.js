@@ -131,6 +131,12 @@ router.get("/events/:eventId", async (req, res) => {
         {
           model: Question,
           as: "questions",
+          include: [
+            {
+              model: Answer,
+              as: "answers", // Include associated answers
+            },
+          ],
         },
       ],
     });
