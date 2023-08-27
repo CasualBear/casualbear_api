@@ -296,69 +296,6 @@ router.post("/events/:eventId/questions", async (req, res) => {
   }
 });
 
-// Update a question
-router.put("/questions/:questionId", async (req, res) => {
-  const { questionId } = req.params;
-  const {
-    question,
-    answers,
-    correctAnswerIndex,
-    zone,
-    points,
-    latitude,
-    longitude,
-    address,
-  } = req.body;
-
-  try {
-    // Find the question by its ID
-    const existingQuestion = await Question.findByPk(questionId, {
-      include: Answer, // Include associated answers
-    });
-
-    if (!existingQuestion) {
-      return res.status(404).json({ error: "Question not found" });
-    }
-
-    // Update question details
-    existingQuestion.question = question;
-    existingQuestion.correctAnswerIndex = correctAnswerIndex;
-    existingQuestion.zone = zone;
-    existingQuestion.latitude = latitude;
-    existingQuestion.points = points;
-    existingQuestion.longitude = longitude;
-    existingQuestion.address = address;
-
-    // Remove existing answers associated with the question
-    await existingQuestion.setAnswers([]);
-
-    const savedAnswers = [];
-
-    // Loop through the new answers and associate them with the question
-    for (const a of answers) {
-      const { answer } = a;
-
-      const savedAnswer = await Answer.create({
-        answer: answer,
-        questionId: existingQuestion.id,
-      });
-
-      savedAnswers.push(savedAnswer);
-    }
-
-    // Associate the new answers with the question
-    await existingQuestion.setAnswers(savedAnswers);
-
-    // Save the updated question
-    await existingQuestion.save();
-
-    res.status(200).json(existingQuestion);
-  } catch (error) {
-    console.error("Error updating question:", error);
-    res.status(500).json({ error: "Failed to update question" });
-  }
-});
-
 // Delete a question
 router.delete("/questions/:questionId", async (req, res) => {
   const { questionId } = req.params;
@@ -407,7 +344,12 @@ router.get("/events/:eventId/questions/:zone", async (req, res) => {
         eventId: eventId,
         zone: zone,
       },
-      include: Answer, // Include associated answers
+      include: [
+        {
+          model: Answer,
+          as: "answers", // Include associated answers
+        },
+      ], // Include associated answers
     });
 
     res.status(200).json({ questions: questions });
