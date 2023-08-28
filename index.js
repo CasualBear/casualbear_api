@@ -17,25 +17,30 @@ const answersRouter = require("./routes/answer");
 const teamsRouter = require("./routes/team");
 
 dotenv.config();
-
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Socket.io connection
+var connectedSocket;
+
+const teamSockets = {}; // A mapping of team IDs to socket instances
+
 io.on("connection", (socket) => {
   socket.on("joinTeamRoom", (teamId) => {
     socket.join(teamId);
     console.log(`Socket ${socket.id} is joining room: ${teamId}`);
-  });
-
-  socket.on("teamUpdate", (data) => {
-    console.log("Received teamUpdate event:", data);
-    // Handle the event data
+    teamSockets[teamId] = socket; // Store the socket instance associated with the team
   });
 
   socket.on("disconnect", () => {
     console.log("Socket disconnected");
+    // Remove the socket instance from the mapping if needed
+    for (const [teamId, teamSocket] of Object.entries(teamSockets)) {
+      if (teamSocket === socket) {
+        delete teamSockets[teamId];
+        break;
+      }
+    }
     // Handle socket disconnection if needed
   });
 });
@@ -47,7 +52,7 @@ app.use("/api/answers", answersRouter);
 app.use(
   "/api/teams",
   (req, res, next) => {
-    req.io = io;
+    req.teamSockets = teamSockets; // Attach teamSockets to the request object
     next();
   },
   teamsRouter

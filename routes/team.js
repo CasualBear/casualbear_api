@@ -119,6 +119,7 @@ router.get("/events/:eventId/teams", async (req, res) => {
 // Update user's isVerified and isCheckedIn
 router.put("/team-flags", async (req, res) => {
   const teamUpdates = req.body;
+  const { teamSockets } = req;
 
   try {
     for (const update of teamUpdates) {
@@ -147,12 +148,16 @@ router.put("/team-flags", async (req, res) => {
       team.isCheckedIn = isCheckedIn;
       await team.save();
 
-      req.io.to(teamId).emit("teamUpdate", {
-        teamId,
-        data: JSON.stringify({
-          isCheckedIn: true,
-        }),
-      });
+      // Use teamSockets as needed
+      const teamSocket = teamSockets[teamId];
+      if (teamSocket) {
+        teamSocket.emit("teamUpdate", {
+          teamId,
+          data: {
+            isCheckedIn: isCheckedIn,
+          },
+        });
+      }
     }
 
     return res.status(200).json({ message: "Team updated successfully" });
