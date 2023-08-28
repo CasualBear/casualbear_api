@@ -146,6 +146,13 @@ router.put("/team-flags", async (req, res) => {
 
       team.isCheckedIn = isCheckedIn;
       await team.save();
+
+      req.io.to(teamId).emit("teamUpdate", {
+        teamId,
+        data: JSON.stringify({
+          isCheckedIn: true,
+        }),
+      });
     }
 
     return res.status(200).json({ message: "Team updated successfully" });
