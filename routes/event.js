@@ -1,3 +1,5 @@
+const { Op } = require("sequelize");
+
 const {
   Event,
   Question,
@@ -332,7 +334,7 @@ router.delete("/questions/:questionId", async (req, res) => {
     res.status(500).json({ error: "Failed to delete question" });
   }
 });
-// Get questions by zone and event ID
+
 router.get("/events/:eventId/questions/:teamId", async (req, res) => {
   const { eventId, teamId } = req.params;
 
@@ -368,12 +370,21 @@ router.get("/events/:eventId/questions/:teamId", async (req, res) => {
       ],
     });
 
-    const formattedQuestions = questions.map((question) => {
+    const activeZones = JSON.parse(team.zones)
+      .filter((zone) => zone.active)
+      .map((zone) => zone.name);
+
+    // Filter questions belonging to active zones
+    const activeZoneQuestions = questions.filter((question) => {
+      return activeZones.includes(question.zone);
+    });
+
+    const formattedQuestions = activeZoneQuestions.map((question) => {
       const answeredCorrectly =
         question.Teams.length > 0
           ? question.Teams[0].TeamQuestion.answeredCorrectly
           : null;
-      const { Teams, ...formattedQuestion } = question.toJSON(); // Destructure and remove Teams
+      const { Teams, ...formattedQuestion } = question.toJSON();
       formattedQuestion.answeredCorrectly = answeredCorrectly;
       return formattedQuestion;
     });
