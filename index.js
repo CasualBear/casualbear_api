@@ -69,7 +69,7 @@ httpServer.listen(port, () => {
   // Set up the interval timer for zone unlocking logic
   const interval = 60 * 1000; // 30 minutes in milliseconds
   setInterval(() => {
-    performZoneUnlockingLogicForAllTeams();
+    //performZoneUnlockingLogicForAllTeams();
   }, interval);
 });
 
