@@ -10,6 +10,9 @@ const io = require("socket.io")(httpServer, {
   },
 });
 
+const router = express.Router();
+const { Answer, Question, Team, Event, TeamQuestion } = require("./app/models");
+
 // Import Routes
 const authRoute = require("./routes/auth");
 const eventRoute = require("./routes/event");
@@ -59,6 +62,53 @@ app.use(
 );
 
 // Start the server
-httpServer.listen(process.env.PORT || 8000, () => {
-  console.log("Server is running on port 8000");
+const port = process.env.PORT || 8000;
+httpServer.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+
+  // Set up the interval timer for zone unlocking logic
+  const interval = 60 * 1000; // 30 minutes in milliseconds
+  setInterval(() => {
+    performZoneUnlockingLogicForAllTeams();
+  }, interval);
 });
+
+async function performZoneUnlockingLogicForAllTeams() {
+  try {
+    // Fetch all teams (replace 'Team' with your actual Sequelize model)
+    const teams = await Team.findAll();
+
+    // Loop through all teams and apply the unlocking logic
+    for (const team of teams) {
+      const zones = JSON.parse(team.zones);
+
+      // Find the last active zone
+      let lastActiveZoneIndex = -1;
+      for (let i = zones.length - 1; i >= 0; i--) {
+        if (zones[i].active) {
+          lastActiveZoneIndex = i;
+          break;
+        }
+      }
+
+      if (
+        lastActiveZoneIndex !== -1 &&
+        lastActiveZoneIndex < zones.length - 2
+      ) {
+        zones[lastActiveZoneIndex + 1].active = true;
+        zones[lastActiveZoneIndex + 2].active = true;
+
+        await team.update({ zones: JSON.stringify(zones) });
+      } else if (
+        lastActiveZoneIndex === zones.length - 2 &&
+        zones[lastActiveZoneIndex].name === "ZoneE"
+      ) {
+        zones[lastActiveZoneIndex + 1].active = true;
+
+        await team.update({ zones: JSON.stringify(zones) });
+      }
+    }
+  } catch (error) {
+    console.error("Error performing zone unlocking logic:", error);
+  }
+}
