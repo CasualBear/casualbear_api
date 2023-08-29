@@ -12,24 +12,20 @@ router.post("/answer-question", async (req, res) => {
   const { teamId, questionId, answerIndex, timeSpent } = req.body;
 
   try {
-    // Find the team by its ID
     const team = await Team.findByPk(teamId);
 
     if (!team) {
       return res.status(404).json({ error: "Team not found" });
     }
 
-    // Find the question by its ID
     const question = await Question.findByPk(questionId);
 
     if (!question) {
       return res.status(404).json({ error: "Question not found" });
     }
 
-    // Check if the provided answer index matches the correctAnswerIndex
     const isCorrect = parseInt(answerIndex) === question.correctAnswerIndex;
 
-    // Update the team's total points and time spent based on the question's outcome
     if (isCorrect) {
       team.totalPoints += question.points;
     }
@@ -40,25 +36,96 @@ router.post("/answer-question", async (req, res) => {
 
     await team.save();
 
-    // Create an entry in TeamQuestions table
-    await TeamQuestion.create({
-      teamId: team.id,
-      questionId: question.id,
-      answeredCorrectly: isCorrect,
-    });
+    const zone = question.zone;
+    const correctAnswersInZone = await getCorrectAnswersInZone(teamId, zone);
 
     if (isCorrect) {
-      res.status(200).json({ message: "Answer is correct. Points awarded." });
+      await TeamQuestion.create({
+        teamId: team.id,
+        questionId: question.id,
+        answeredCorrectly: true,
+      });
+
+      // Check if the team has unlocked the next zone
+      if (correctAnswersInZone + 1 >= 4) {
+        const zones = JSON.parse(team.zones);
+
+        const currentZoneIndex = zones.findIndex((z) => z.name === zone);
+
+        if (currentZoneIndex !== -1 && currentZoneIndex < zones.length - 2) {
+          zones[currentZoneIndex + 1].active = true;
+          zones[currentZoneIndex + 2].active = true;
+
+          await team.update({ zones: JSON.stringify(zones) });
+        } else if (currentZoneIndex === zones.length - 2 && zone === "ZoneE") {
+          zones[currentZoneIndex + 1].active = true;
+
+          await team.update({ zones: JSON.stringify(zones) });
+        }
+      }
+
+      const correctAnswersPerZone = await getCorrectAnswersPerZone(teamId);
+
+      res.status(200).json({
+        message: "Answer is correct. Points awarded.",
+        correctAnswersPerZone,
+      });
     } else {
-      res
-        .status(200)
-        .json({ message: "Answer is incorrect. No points awarded." });
+      await TeamQuestion.create({
+        teamId: team.id,
+        questionId: question.id,
+        answeredCorrectly: false,
+      });
+
+      res.status(200).json({
+        message: "Answer is incorrect. No points awarded.",
+        correctAnswersPerZone: await getCorrectAnswersPerZone(teamId),
+      });
     }
   } catch (error) {
     console.error("Error answering question:", error);
     res.status(500).json({ error: "Failed to answer question" });
   }
 });
+
+async function getCorrectAnswersInZone(teamId, zone) {
+  const teamQuestions = await TeamQuestion.findAll({
+    where: { teamId },
+    include: {
+      model: Question,
+      as: "question", // Specify the alias you used for the association
+      where: { zone },
+    },
+  });
+
+  const correctAnswersCount = teamQuestions.reduce((count, teamQuestion) => {
+    return count + (teamQuestion.answeredCorrectly ? 1 : 0);
+  }, 0);
+
+  return correctAnswersCount;
+}
+
+async function getCorrectAnswersPerZone(teamId) {
+  const zones = [
+    "ZoneA",
+    "ZoneAChallenges",
+    "ZoneB",
+    "ZoneBChallenges",
+    "ZoneC",
+    "ZoneCChallenges",
+    "ZoneD",
+    "ZoneDChallenges",
+    "ZoneE",
+    "ZoneEChallenges",
+  ];
+
+  const correctAnswersPerZone = {};
+  for (const zone of zones) {
+    correctAnswersPerZone[zone] = await getCorrectAnswersInZone(teamId, zone);
+  }
+
+  return correctAnswersPerZone;
+}
 
 router.get("/teams", async (req, res) => {
   try {

@@ -8,11 +8,16 @@ const jwt = require("jsonwebtoken");
 // This creates the users and send an email to the team captain with a username and password of his team
 router.post("/events/:eventId/teams", async (req, res) => {
   const predefinedZones = [
-    { name: "ZoneA", active: false },
+    { name: "ZoneA", active: true },
+    { name: "ZoneAChallenges", active: false },
     { name: "ZoneB", active: false },
+    { name: "ZoneBChallenges", active: false },
     { name: "ZoneC", active: false },
+    { name: "ZoneCChallenges", active: false },
     { name: "ZoneD", active: false },
+    { name: "ZoneDChallenges", active: false },
     { name: "ZoneE", active: false },
+    { name: "ZoneEChallenges", active: false },
   ];
 
   const zonesAsString = JSON.stringify(predefinedZones);
