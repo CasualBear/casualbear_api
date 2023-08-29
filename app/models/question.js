@@ -9,14 +9,15 @@ module.exports = (sequelize, DataTypes) => {
     address: DataTypes.STRING,
   });
 
-  Question.associate = function (models) {
-    Question.belongsTo(models.Event, {
-      foreignKey: "eventId",
-    });
+  Question.associate = (models) => {
+    Question.belongsTo(models.Event, { foreignKey: "eventId" });
     Question.hasMany(models.Answer, {
-      // Add this association
+      as: "answers",
       foreignKey: "questionId",
-      as: "answers", // Alias for the association
+    });
+    Question.belongsToMany(models.Team, {
+      through: models.TeamQuestion,
+      foreignKey: "questionId",
     });
   };
 

@@ -1,4 +1,10 @@
-const { Event, Question, Team, Answer } = require("../app/models");
+const {
+  Event,
+  Question,
+  Team,
+  Answer,
+  TeamQuestion,
+} = require("../app/models");
 const router = require("express").Router();
 const path = require("path");
 const AWS = require("aws-sdk");
@@ -327,32 +333,52 @@ router.delete("/questions/:questionId", async (req, res) => {
   }
 });
 // Get questions by zone and event ID
-router.get("/events/:eventId/questions/:zone", async (req, res) => {
-  const { eventId, zone } = req.params;
+router.get("/events/:eventId/questions/:teamId", async (req, res) => {
+  const { eventId, teamId } = req.params;
 
   try {
-    // Find the event by its ID
     const event = await Event.findByPk(eventId);
 
     if (!event) {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    // Retrieve questions for the specified event and zone
+    const team = await Team.findByPk(teamId);
+
+    if (!team) {
+      return res.status(404).json({ error: "Team not found" });
+    }
+
     const questions = await Question.findAll({
-      where: {
-        eventId: eventId,
-        zone: zone,
-      },
+      where: { eventId },
       include: [
         {
           model: Answer,
-          as: "answers", // Include associated answers
+          as: "answers",
         },
-      ], // Include associated answers
+        {
+          model: Team,
+          as: "Teams", // Correct alias here
+          through: {
+            attributes: ["answeredCorrectly"],
+            where: { teamId },
+          },
+          required: false,
+        },
+      ],
     });
 
-    res.status(200).json({ questions: questions });
+    const formattedQuestions = questions.map((question) => {
+      const answeredCorrectly =
+        question.Teams.length > 0
+          ? question.Teams[0].TeamQuestion.answeredCorrectly
+          : null;
+      const { Teams, ...formattedQuestion } = question.toJSON(); // Destructure and remove Teams
+      formattedQuestion.answeredCorrectly = answeredCorrectly;
+      return formattedQuestion;
+    });
+
+    res.status(200).json({ questions: formattedQuestions });
   } catch (error) {
     console.error("Error retrieving questions:", error);
     res.status(500).json({ error: "Failed to retrieve questions" });

@@ -45,6 +45,10 @@ module.exports = {
             type: DataTypes.STRING,
             allowNull: false,
           },
+          answeredCorrectly: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true,
+          },
           isVisible: {
             type: DataTypes.BOOLEAN,
             allowNull: false,

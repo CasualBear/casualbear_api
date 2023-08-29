@@ -24,6 +24,16 @@ Object.keys(db).forEach((modelName) => {
   }
 });
 
+// Sync the models with the database
+sequelize
+  .sync()
+  .then(() => {
+    console.log("Database synced");
+  })
+  .catch((error) => {
+    console.error("Error syncing database:", error);
+  });
+
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
