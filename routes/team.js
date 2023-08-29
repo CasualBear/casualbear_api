@@ -151,12 +151,13 @@ router.put("/team-flags", async (req, res) => {
       // Use teamSockets as needed
       const teamSocket = teamSockets[teamId];
       if (teamSocket) {
-        teamSocket.emit("teamUpdate", {
-          teamId,
-          data: {
-            isCheckedIn: isCheckedIn,
-          },
-        });
+        teamSocket.emit(
+          "TeamUpdated",
+          JSON.stringify({
+            isCheckedIn: team.isCheckedIn,
+            isVerified: team.isVerified,
+          })
+        );
       }
     }
 
@@ -171,6 +172,7 @@ router.put("/team-flags", async (req, res) => {
 router.put("/teams/:teamId/zones", async (req, res) => {
   const teamId = req.params.teamId;
   const { zones } = req.body;
+  const { teamSockets } = req;
 
   try {
     const team = await Team.findByPk(teamId);
@@ -184,6 +186,10 @@ router.put("/teams/:teamId/zones", async (req, res) => {
 
     // Update the zones status for the team
     await team.update({ zones: zonesAsString });
+    const teamSocket = teamSockets[teamId];
+    if (teamSocket) {
+      teamSocket.emit("ZonesUpdated");
+    }
 
     res.json({ message: "Zones status updated successfully" });
   } catch (error) {
