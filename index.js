@@ -2,6 +2,8 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const dotenv = require("dotenv");
+const schedule = require("node-schedule");
+const moment = require("moment-timezone");
 const httpServer = require("http").createServer(app);
 const io = require("socket.io")(httpServer, {
   cors: {
@@ -23,8 +25,6 @@ dotenv.config();
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-var connectedSocket;
 
 const teamSockets = {}; // A mapping of team IDs to socket instances
 
@@ -48,10 +48,32 @@ io.on("connection", (socket) => {
   });
 });
 
+// Schedule socket events
+const timeZone = "Europe/Lisbon";
+const gameStartTime = moment.tz("01:24:00", timeZone);
+const gameEndTime = moment.tz("01:25:00", timeZone);
+
+// Schedule game started event at 03:15:40 GMT+3
+schedule.scheduleJob(gameStartTime.toDate(), () => {
+  io.emit("GameStarted", "The game has started!");
+});
+
+// Schedule game ended event at the end of the game duration
+schedule.scheduleJob(gameEndTime.toDate(), () => {
+  io.emit("GameEnded", "The game has ended!");
+});
+
 // Route Middleware
 app.use("/api/user", authRoute);
 app.use("/api/event", eventRoute);
-app.use("/api/answers", answersRouter);
+app.use(
+  "/api/answers",
+  (req, res, next) => {
+    req.teamSockets = teamSockets; // Attach teamSockets to the request object
+    next();
+  },
+  answersRouter
+);
 app.use(
   "/api/teams",
   (req, res, next) => {
@@ -67,13 +89,13 @@ httpServer.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 
   // Set up the interval timer for zone unlocking logic
-  const interval = 60 * 1000; // 30 minutes in milliseconds
+  const interval = 5 * 1000; // 30 minutes in milliseconds
   setInterval(() => {
-    //performZoneUnlockingLogicForAllTeams();
+    //performZoneUnlockingLogicForAllTeams(teamSockets);
   }, interval);
 });
 
-async function performZoneUnlockingLogicForAllTeams() {
+async function performZoneUnlockingLogicForAllTeams(teamSockets) {
   try {
     // Fetch all teams (replace 'Team' with your actual Sequelize model)
     const teams = await Team.findAll();
@@ -107,6 +129,8 @@ async function performZoneUnlockingLogicForAllTeams() {
 
         await team.update({ zones: JSON.stringify(zones) });
       }
+      const teamSocket = teamSockets[team.id];
+      teamSocket.emit("ZonesChanged");
     }
   } catch (error) {
     console.error("Error performing zone unlocking logic:", error);

@@ -10,6 +10,7 @@ const {
 
 router.post("/answer-question", async (req, res) => {
   const { teamId, questionId, answerIndex, timeSpent } = req.body;
+  const { teamSockets } = req;
 
   try {
     const team = await Team.findByPk(teamId);
@@ -63,6 +64,9 @@ router.post("/answer-question", async (req, res) => {
           await team.update({ zones: JSON.stringify(zones) });
         }
       }
+
+      const teamSocket = teamSockets[team.id];
+      teamSocket.emit("ZonesChanged");
 
       const correctAnswersPerZone = await getCorrectAnswersPerZone(teamId);
 
