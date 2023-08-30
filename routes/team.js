@@ -37,7 +37,7 @@ router.post("/events/:eventId/teams", async (req, res) => {
 
     req.body.teamId = team.id;
     const createdUsers = [];
-    const usersFromRequest = req.body.users[0];
+    const usersFromRequest = req.body.users;
 
     for (let i = 0; i < usersFromRequest.length; i++) {
       const userData = usersFromRequest[i];
