@@ -33,7 +33,12 @@ router.post("/events/:eventId/teams", async (req, res) => {
     }
 
     var name = generateRandomNumber();
-    const team = await Team.create({ name, eventId, zones: zonesAsString });
+    const team = await Team.create({
+      name,
+      eventId,
+      zones: zonesAsString,
+      isVerified: "Validating",
+    });
 
     req.body.teamId = team.id;
     const createdUsers = [];
