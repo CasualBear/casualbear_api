@@ -38,6 +38,7 @@ router.post("/events/:eventId/teams", async (req, res) => {
       eventId,
       zones: zonesAsString,
       isVerified: "Validating",
+      isCheckedOverall: true,
     });
 
     req.body.teamId = team.id;
