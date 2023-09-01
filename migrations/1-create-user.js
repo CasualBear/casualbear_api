@@ -15,6 +15,10 @@ module.exports = {
         allowNull: true,
         type: DataTypes.STRING, // You might want to use DataTypes.DATE if storing a date.
       },
+      postalCode: {
+        allowNull: true,
+        type: DataTypes.STRING, // You might want to use DataTypes.DATE if storing a date.
+      },
       cc: {
         allowNull: true,
         type: DataTypes.STRING,

@@ -59,11 +59,16 @@ router.post("/events/:eventId/teams", async (req, res) => {
             to: userData.email,
             from: "nobre@casualbear.io",
             subject: "Access Credentials",
-            text:
-              "Welcome. These are your credentials. Email: " +
-              userData.email +
-              " and Password: " +
-              randomPassword,
+            html: `<p>Caro participante,</p>
+          <p>Temos todo o gosto em confirmar que recebemos a inscrição da tua equipa para o Warner Bros. Discovery Day, que acontecerá no próximo dia 23 de setembro de 2023, em Lisboa.</p>
+          <p>A inscrição passou para a fase de validação, e entraremos em contacto assim que possível para validar ou não a vossa presença no passatempo, de acordo com os termos descritos no Regulamento.</p>
+          <p>Enviamos abaixo os dados de login para a aplicação do jogo, que estará disponível mais perto da data do Passatempo. Através do website <a href="www.wbdday.pt">www.wbdday.pt</a> poderás aceder diretamente à App Store ou à Play Store, onde poderás descarregar a aplicação de forma gratuita.</p>
+          <p><strong>DADOS DE LOGIN</strong></p>
+          <p>Email: ${userData.email}</p>
+          <p>Password: ${randomPassword}</p>
+          <p>Caso tenhas alguma dúvida ou questão, envia-nos um email para <a href="mailto:info@wbdday.pt">info@wbdday.pt</a>.</p>
+          <p>Cumprimentos,<br>Organização do WBD’Day 2023.</p>
+          <img src="https://casualbearapi-staging.s3.amazonaws.com/Screenshot+2023-09-01+at+16.50.11.png" alt="Signature Image" width="671" height="314">`,
           };
 
           sgMail
