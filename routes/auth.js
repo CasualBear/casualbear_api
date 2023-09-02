@@ -14,7 +14,7 @@ router.post("/register", async (req, res) => {
 
     const msg = {
       to: req.body.email,
-      from: "nobre@casualbear.io",
+      from: "noreply@wbday.pt",
       subject: "Access Credentials",
       text:
         "Welcome. This are your credentials. Email: " +

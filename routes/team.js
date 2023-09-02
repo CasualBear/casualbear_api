@@ -57,7 +57,7 @@ router.post("/events/:eventId/teams", async (req, res) => {
 
           const msg = {
             to: userData.email,
-            from: "nobre@casualbear.io",
+            from: "noreply@wbdday.pt",
             subject: "Access Credentials",
             html: `<p>Caro participante,</p>
           <p>Temos todo o gosto em confirmar que recebemos a inscrição da tua equipa para o Warner Bros. Discovery Day, que acontecerá no próximo dia 23 de setembro de 2023, em Lisboa.</p>
