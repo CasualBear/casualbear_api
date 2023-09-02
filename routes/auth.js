@@ -15,7 +15,7 @@ router.post("/register", async (req, res) => {
     const msg = {
       to: req.body.email,
       from: "noreply@wbday.pt",
-      subject: "Access Credentials",
+      subject: "Credenciais de acesso - WBD'Day 2023",
       text:
         "Welcome. This are your credentials. Email: " +
         req.body.email +
