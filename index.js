@@ -48,6 +48,7 @@ io.on("connection", (socket) => {
   });
 });
 
+/*
 // Schedule socket events
 const timeZone = "Europe/Lisbon";
 const gameStartTime = moment.tz("01:24:00", timeZone);
@@ -62,6 +63,7 @@ schedule.scheduleJob(gameStartTime.toDate(), () => {
 schedule.scheduleJob(gameEndTime.toDate(), () => {
   io.emit("GameEnded", "The game has ended!");
 });
+*/
 
 // Route Middleware
 app.use("/api/user", authRoute);
