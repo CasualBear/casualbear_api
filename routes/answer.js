@@ -1,4 +1,5 @@
 const express = require("express");
+const verify = require("./verifyToken");
 const router = express.Router();
 const {
   Answer,
@@ -8,7 +9,7 @@ const {
   TeamQuestion,
 } = require("../app/models");
 
-router.post("/answer-question", async (req, res) => {
+router.post("/answer-question", verify, async (req, res) => {
   const { teamId, questionId, answerIndex, timeSpent } = req.body;
   const { teamSockets } = req;
 
@@ -131,7 +132,7 @@ async function getCorrectAnswersPerZone(teamId) {
   return correctAnswersPerZone;
 }
 
-router.get("/teams", async (req, res) => {
+router.get("/teams", verify, async (req, res) => {
   try {
     // Retrieve all teams from the database, ordered by points and timeSpent
     const teams = await Team.findAll({

@@ -3,6 +3,7 @@ const { Team, User, Event } = require("../app/models"); // Import your models
 const sgMail = require("@sendgrid/mail");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const verify = require("./verifyToken");
 
 // create Team
 // This creates the users and send an email to the team captain with a username and password of his team
@@ -108,7 +109,7 @@ router.post("/events/:eventId/teams", async (req, res) => {
   }
 });
 
-router.get("/events/:eventId/teams", async (req, res) => {
+router.get("/events/:eventId/teams", verify, async (req, res) => {
   const eventId = req.params.eventId;
 
   try {
@@ -133,7 +134,7 @@ router.get("/events/:eventId/teams", async (req, res) => {
 });
 
 // Update user's isVerified and isCheckedIn
-router.put("/team-flags", async (req, res) => {
+router.put("/team-flags", verify, async (req, res) => {
   const teamUpdates = req.body;
   const { teamSockets } = req;
 
@@ -185,7 +186,7 @@ router.put("/team-flags", async (req, res) => {
 });
 
 // PUT update zones status by team ID
-router.put("/teams/:teamId/zones", async (req, res) => {
+router.put("/teams/:teamId/zones", verify, async (req, res) => {
   const teamId = req.params.teamId;
   const { zones } = req.body;
   const { teamSockets } = req;
@@ -215,7 +216,7 @@ router.put("/teams/:teamId/zones", async (req, res) => {
 });
 
 // DELETE team by ID with cascade delete of users
-router.delete("/teams/:teamId", async (req, res) => {
+router.delete("/teams/:teamId", verify, async (req, res) => {
   const teamId = req.params.teamId;
 
   try {

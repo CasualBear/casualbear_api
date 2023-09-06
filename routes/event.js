@@ -1,4 +1,5 @@
 const { Op } = require("sequelize");
+const verify = require("./verifyToken");
 
 const {
   Event,
@@ -132,7 +133,7 @@ router.get("/events", async (req, res) => {
   }
 });
 
-router.get("/events/:eventId", async (req, res) => {
+router.get("/events/:eventId", verify, async (req, res) => {
   const eventId = req.params.eventId;
 
   try {
@@ -176,7 +177,7 @@ router.get("/events/:eventId", async (req, res) => {
 });
 
 // DELETE method to delete an event
-router.delete("/events/:eventId", async (req, res) => {
+router.delete("/events/:eventId", verify, async (req, res) => {
   try {
     const bucketName = "casualbearapi-staging";
     const eventId = req.params.eventId;
@@ -202,55 +203,60 @@ router.delete("/events/:eventId", async (req, res) => {
   }
 });
 
-router.put("/events/:eventId", upload.single("iconFile"), async (req, res) => {
-  try {
-    const eventId = req.params.eventId;
+router.put(
+  "/events/:eventId",
+  verify,
+  upload.single("iconFile"),
+  async (req, res) => {
+    try {
+      const eventId = req.params.eventId;
 
-    // Find the event by its ID in the database
-    const event = await Event.findByPk(eventId);
+      // Find the event by its ID in the database
+      const event = await Event.findByPk(eventId);
 
-    if (!event) {
-      return res.status(404).json({ error: "Event not found." });
+      if (!event) {
+        return res.status(404).json({ error: "Event not found." });
+      }
+
+      // Update the event properties
+      event.name = req.body.name;
+      event.description = req.body.description;
+      event.selectedColor = parseInt(req.body.selectedColor);
+
+      // Check if a new image is uploaded
+      if (req.file) {
+        const filePath = req.file.path; // Path of the newly uploaded image
+        const bucketName = "casualbearapi-staging";
+        const randomKey = generateRandomKey();
+        const objectKey = randomKey + ".jpg";
+
+        // Delete the existing image from the S3 bucket
+        const existingObjectKey = event.rawUrl.split("/").pop();
+        await s3
+          .deleteObject({ Bucket: bucketName, Key: existingObjectKey })
+          .promise();
+
+        // Upload the new image to the S3 bucket
+        const s3Url = await uploadImageToS3(filePath, bucketName, objectKey);
+
+        // Update the event's rawUrl with the S3 URL of the new image
+        event.rawUrl = s3Url;
+      }
+
+      // Save the updated event
+      await event.save();
+
+      // Return the updated event as the response
+      res.json({ event });
+    } catch (error) {
+      console.error("Error updating event:", error);
+      res.status(500).json({ error: "Failed to update event" });
     }
-
-    // Update the event properties
-    event.name = req.body.name;
-    event.description = req.body.description;
-    event.selectedColor = parseInt(req.body.selectedColor);
-
-    // Check if a new image is uploaded
-    if (req.file) {
-      const filePath = req.file.path; // Path of the newly uploaded image
-      const bucketName = "casualbearapi-staging";
-      const randomKey = generateRandomKey();
-      const objectKey = randomKey + ".jpg";
-
-      // Delete the existing image from the S3 bucket
-      const existingObjectKey = event.rawUrl.split("/").pop();
-      await s3
-        .deleteObject({ Bucket: bucketName, Key: existingObjectKey })
-        .promise();
-
-      // Upload the new image to the S3 bucket
-      const s3Url = await uploadImageToS3(filePath, bucketName, objectKey);
-
-      // Update the event's rawUrl with the S3 URL of the new image
-      event.rawUrl = s3Url;
-    }
-
-    // Save the updated event
-    await event.save();
-
-    // Return the updated event as the response
-    res.json({ event });
-  } catch (error) {
-    console.error("Error updating event:", error);
-    res.status(500).json({ error: "Failed to update event" });
   }
-});
+);
 
 // add question to event
-router.post("/events/:eventId/questions", async (req, res) => {
+router.post("/events/:eventId/questions", verify, async (req, res) => {
   const { eventId } = req.params;
   const {
     question,
@@ -307,7 +313,7 @@ router.post("/events/:eventId/questions", async (req, res) => {
 });
 
 // Delete a question
-router.delete("/questions/:questionId", async (req, res) => {
+router.delete("/questions/:questionId", verify, async (req, res) => {
   const { questionId } = req.params;
 
   try {
@@ -337,7 +343,7 @@ router.delete("/questions/:questionId", async (req, res) => {
   }
 });
 
-router.get("/events/:eventId/questions/:teamId", async (req, res) => {
+router.get("/events/:eventId/questions/:teamId", verify, async (req, res) => {
   const { eventId, teamId } = req.params;
 
   try {

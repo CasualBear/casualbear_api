@@ -78,7 +78,7 @@ router.post("/login", async (req, res) => {
     });
 
     // create and assign a token
-    const token = jwt.sign({ id: user.id }, "KEY_TO_SIGN_TOKEN");
+    const token = jwt.sign({ id: user.id }, "WBBDAYTOKEN_SECRET_HASH");
     res.status(200).send({
       auth: true,
       token: token,
