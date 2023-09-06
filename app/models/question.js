@@ -6,6 +6,7 @@ module.exports = (sequelize, DataTypes) => {
     zone: DataTypes.STRING,
     latitude: DataTypes.STRING,
     longitude: DataTypes.STRING,
+    isVisible: DataTypes.BOOLEAN,
     address: DataTypes.STRING,
   });
 
