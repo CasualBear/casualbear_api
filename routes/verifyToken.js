@@ -43,7 +43,7 @@ module.exports = async function (req, res, next) {
 
     // Generate a new token (e.g., when refreshing)
     const newToken = jwt.sign({ id: req.userId }, "WBBDAYTOKEN_SECRET_HASH", {
-      expiresIn: null, // or simply omit the expiresIn option
+      expiresIn: "30000h",
     });
 
     // Revoke the previous token and save it to the database
