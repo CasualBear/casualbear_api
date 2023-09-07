@@ -6,10 +6,13 @@ module.exports = async function (req, res, next) {
   const admin = req.header("ADMIN");
 
   if (admin == "true") {
-    next();
+    // If the user is an admin, allow access and return
+    return next();
   }
 
-  if (!token) return res.status(401).send("Access Denied");
+  if (!token) {
+    return res.status(401).send("Access Denied");
+  }
 
   try {
     const verified = jwt.verify(token, "SECRET_TOKEN_HASH");
@@ -27,6 +30,7 @@ module.exports = async function (req, res, next) {
       return res.status(401).send("Authorization Invalid");
     }
 
+    // If all checks pass, allow access
     next();
   } catch (error) {
     res.status(400).send("Invalid Token");
