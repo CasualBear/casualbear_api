@@ -26,7 +26,14 @@ router.post("/answer-question", verify, async (req, res) => {
       return res.status(404).json({ error: "Question not found" });
     }
 
-    const isCorrect = parseInt(answerIndex) === question.correctAnswerIndex;
+    var isCorrect;
+
+    // Check if questionId is null
+    if (answerIndex === null) {
+      isCorrect = true;
+    } else {
+      isCorrect = parseInt(answerIndex) === question.correctAnswerIndex;
+    }
 
     if (isCorrect) {
       team.totalPoints += question.points;
@@ -64,10 +71,12 @@ router.post("/answer-question", verify, async (req, res) => {
 
           await team.update({ zones: JSON.stringify(zones) });
         }
-      }
 
-      const teamSocket = teamSockets[team.id];
-      teamSocket.emit("ZonesChanged");
+        const teamSocket = teamSockets[team.id];
+        if (teamSocket) {
+          teamSocket.emit("ZonesChanged");
+        }
+      }
 
       const correctAnswersPerZone = await getCorrectAnswersPerZone(teamId);
 
