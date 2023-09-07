@@ -1,8 +1,5 @@
 const { Op } = require("sequelize");
-const express = require("express");
 const verify = require("./verifyToken");
-const app = express();
-const httpServer = require("http").createServer(app);
 
 const {
   Event,
@@ -15,12 +12,6 @@ const router = require("express").Router();
 const path = require("path");
 const AWS = require("aws-sdk");
 const multer = require("multer");
-const io = require("socket.io")(httpServer, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-  },
-});
 
 // Set up Multer for handling file uploads
 const storage = multer.diskStorage({
@@ -415,10 +406,11 @@ router.get("/events/:eventId/questions/:teamId", verify, async (req, res) => {
 
 router.post("/event/start/:eventId", verify, async (req, res) => {
   const eventId = req.params.eventId;
+  const { io } = req;
 
   try {
     // Emit the game started event
-    io.emit("GameStarted", "The game has started!");
+    io.emit("GameStarted");
 
     // Update the Event table to set hasStarted to true for the specified eventId
     await Event.update(
@@ -439,9 +431,10 @@ router.post("/event/start/:eventId", verify, async (req, res) => {
 
 router.post("/event/stop/:eventId", verify, async (req, res) => {
   const eventId = req.params.eventId;
+  const { io } = req;
   try {
     // Emit the game started event
-    io.emit("GameEnded", "The game has stopped!");
+    io.emit("GameEnded");
 
     // Update the Event table to set hasStarted to true
     await Event.update(

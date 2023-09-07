@@ -67,7 +67,14 @@ schedule.scheduleJob(gameEndTime.toDate(), () => {
 
 // Route Middleware
 app.use("/api/user", authRoute);
-app.use("/api/event", eventRoute);
+app.use(
+  "/api/event",
+  (req, res, next) => {
+    req.io = io; // Attach io to the request object
+    next();
+  },
+  eventRoute
+);
 app.use(
   "/api/answers",
   (req, res, next) => {
