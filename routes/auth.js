@@ -1,4 +1,4 @@
-const { User, Team } = require("../app/models");
+const { User, Team, RevokedToken } = require("../app/models");
 const router = require("express").Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -48,45 +48,49 @@ router.post("/register", async (req, res) => {
 // login
 router.post("/login", async (req, res) => {
   try {
+    const { email, password, deviceIdentifier } = req.body;
+
+    // Find the user by their email
     const user = await User.findOne({
-      where: {
-        email: req.body.email,
-      },
+      where: { email: email },
     });
 
-    if (!user) return res.status(400).send("Email is wrong");
+    if (!user) {
+      return res.status(401).json({ message: "Email is wrong" });
+    }
 
-    // check if password is correct
-    const validPassword = await bcrypt.compare(
-      req.body.password,
-      user.password
+    // Check if the provided password matches the stored hash
+    const validPassword = await bcrypt.compare(password, user.password);
+
+    if (!validPassword) {
+      return res.status(401).json({ message: "Password is wrong" });
+    }
+
+    // Store the device identifier associated with the user
+    await User.update(
+      { deviceIdentifier: deviceIdentifier },
+      {
+        where: { id: user.id },
+      }
     );
 
-    if (!validPassword) return res.status(400).send("Password is wrong");
+    // Create a new token for the user
+    const token = jwt.sign(
+      { id: user.id, deviceIdentifier: deviceIdentifier },
+      "SECRET_TOKEN_HASH",
+      {
+        expiresIn: "10000h", // Set your desired token expiration
+      }
+    );
 
-    // Find the team of the user and all members
-    const team = await Team.findOne({
-      where: {
-        id: user.teamId,
-      },
-      include: [
-        {
-          model: User,
-          as: "members",
-        },
-      ],
-    });
-
-    // create and assign a token
-    const token = jwt.sign({ id: user.id }, "WBBDAYTOKEN_SECRET_HASH");
-    res.status(200).send({
+    res.status(200).json({
       auth: true,
       token: token,
-      role: user.role,
-      team: team,
+      message: "Login successful",
     });
   } catch (error) {
-    res.status(400).send(error);
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 

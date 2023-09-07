@@ -8,9 +8,13 @@ module.exports = {
         type: Sequelize.INTEGER,
       },
       token: {
-        allowNull: false,
         type: Sequelize.STRING,
-        unique: true,
+        allowNull: false,
+        unique: true, // Ensure each token is stored only once
+      },
+      userId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
       },
       createdAt: {
         allowNull: false,

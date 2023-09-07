@@ -1,5 +1,8 @@
 const { Op } = require("sequelize");
+const express = require("express");
 const verify = require("./verifyToken");
+const app = express();
+const httpServer = require("http").createServer(app);
 
 const {
   Event,
@@ -12,6 +15,12 @@ const router = require("express").Router();
 const path = require("path");
 const AWS = require("aws-sdk");
 const multer = require("multer");
+const io = require("socket.io")(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  },
+});
 
 // Set up Multer for handling file uploads
 const storage = multer.diskStorage({
@@ -401,6 +410,30 @@ router.get("/events/:eventId/questions/:teamId", verify, async (req, res) => {
   } catch (error) {
     console.error("Error retrieving questions:", error);
     res.status(500).json({ error: "Failed to retrieve questions" });
+  }
+});
+
+router.post("/event/start", verify, async (req, res) => {
+  try {
+    io.emit("GameStarted", "The game has started!");
+    res.status(200).json({
+      message: "Game started",
+    });
+  } catch (error) {
+    console.error("Error starting game:", error);
+    res.status(500).json({ error: "Failed to start game" });
+  }
+});
+
+router.post("/event/stop", verify, async (req, res) => {
+  try {
+    io.emit("GameEnded", "The game has ended!");
+    res.status(200).json({
+      message: "Game Ended",
+    });
+  } catch (error) {
+    console.error("Error starting game:", error);
+    res.status(500).json({ error: "Failed to end game" });
   }
 });
 

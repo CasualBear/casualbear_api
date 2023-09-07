@@ -10,6 +10,7 @@ module.exports = (sequelize, DataTypes) => {
     postalCode: DataTypes.STRING,
     address: DataTypes.STRING,
     nosCard: DataTypes.STRING,
+    deviceIdentifier: DataTypes.STRING,
     tShirtSize: DataTypes.STRING,
     isCheckedPrivacyData: DataTypes.BOOLEAN,
     isCheckedTermsConditions: DataTypes.BOOLEAN,
