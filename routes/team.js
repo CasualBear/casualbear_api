@@ -215,6 +215,25 @@ router.put("/teams/:teamId/zones", verify, async (req, res) => {
   }
 });
 
+router.get("/teams/:teamId", verify, async (req, res) => {
+  const teamId = req.params.teamId;
+
+  try {
+    // Find the team by its ID
+    const team = await Team.findByPk(teamId);
+
+    if (!team) {
+      return res.status(404).json({ message: "Team not found" });
+    }
+
+    // Retrieve the team details
+    res.json({ team });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // DELETE team by ID with cascade delete of users
 router.delete("/teams/:teamId", verify, async (req, res) => {
   const teamId = req.params.teamId;
