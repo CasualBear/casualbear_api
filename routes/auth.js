@@ -66,6 +66,19 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Password is wrong" });
     }
 
+    // Find the team of the user and all members
+    const team = await Team.findOne({
+      where: {
+        id: user.teamId,
+      },
+      include: [
+        {
+          model: User,
+          as: "members",
+        },
+      ],
+    });
+
     // Store the device identifier associated with the user
     await User.update(
       { deviceIdentifier: deviceIdentifier },
@@ -87,6 +100,7 @@ router.post("/login", async (req, res) => {
       auth: true,
       role: user.role,
       token: token,
+      team: team,
       message: "Login successful",
     });
   } catch (error) {
