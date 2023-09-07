@@ -413,9 +413,21 @@ router.get("/events/:eventId/questions/:teamId", verify, async (req, res) => {
   }
 });
 
-router.post("/event/start", verify, async (req, res) => {
+router.post("/event/start/:eventId", verify, async (req, res) => {
+  const eventId = req.params.eventId;
+
   try {
+    // Emit the game started event
     io.emit("GameStarted", "The game has started!");
+
+    // Update the Event table to set hasStarted to true for the specified eventId
+    await Event.update(
+      { hasStarted: true },
+      {
+        where: { id: eventId },
+      }
+    );
+
     res.status(200).json({
       message: "Game started",
     });
@@ -425,14 +437,25 @@ router.post("/event/start", verify, async (req, res) => {
   }
 });
 
-router.post("/event/stop", verify, async (req, res) => {
+router.post("/event/stop/:eventId", verify, async (req, res) => {
+  const eventId = req.params.eventId;
   try {
-    io.emit("GameEnded", "The game has ended!");
+    // Emit the game started event
+    io.emit("GameEnded", "The game has stopped!");
+
+    // Update the Event table to set hasStarted to true
+    await Event.update(
+      { hasStarted: false },
+      {
+        where: { id: eventId },
+      }
+    );
+
     res.status(200).json({
       message: "Game Ended",
     });
   } catch (error) {
-    console.error("Error starting game:", error);
+    console.error("Error ending game:", error);
     res.status(500).json({ error: "Failed to end game" });
   }
 });
