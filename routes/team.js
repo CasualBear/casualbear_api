@@ -215,8 +215,9 @@ router.put("/teams/:teamId/zones", verify, async (req, res) => {
   }
 });
 
-router.get("/teams/:teamId", verify, async (req, res) => {
+router.get("/event/:eventId/teams/:teamId", verify, async (req, res) => {
   const teamId = req.params.teamId;
+  const eventId = req.params.eventId;
 
   try {
     // Find the team by its ID
@@ -226,8 +227,14 @@ router.get("/teams/:teamId", verify, async (req, res) => {
       return res.status(404).json({ message: "Team not found" });
     }
 
+    const event = await Event.findOne({
+      where: {
+        id: eventId,
+      },
+    });
+
     // Retrieve the team details
-    res.json({ team });
+    res.json({ team, hasStarted: event.hasStarted });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
