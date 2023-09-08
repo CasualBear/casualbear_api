@@ -25,6 +25,24 @@ router.post("/events/:eventId/teams", async (req, res) => {
 
   const eventId = req.params.eventId;
   const { users } = req.body;
+  const ccSet = new Set();
+  let hasDuplicateCC = false;
+
+  for (const userData of users) {
+    if (userData.cc) {
+      if (ccSet.has(userData.cc)) {
+        hasDuplicateCC = true;
+        break;
+      }
+      ccSet.add(userData.cc);
+    }
+  }
+
+  if (hasDuplicateCC) {
+    return res
+      .status(400)
+      .json({ message: "Duplicate CC numbers in the request" });
+  }
 
   try {
     const event = await Event.findByPk(eventId);
@@ -33,54 +51,17 @@ router.post("/events/:eventId/teams", async (req, res) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
-    var name = generateRandomNumber();
-    const team = await Team.create({
-      name,
-      eventId,
-      zones: zonesAsString,
-      isVerified: "Validating",
-      isCheckedOverall: true,
-    });
+    const name = generateRandomNumber();
 
-    req.body.teamId = team.id;
     const createdUsers = [];
     const usersFromRequest = req.body.users;
+    const randomPassword = generateRandomPassword(4);
 
+    // create users
     for (let i = 0; i < usersFromRequest.length; i++) {
       const userData = usersFromRequest[i];
       if (userData.isCaptain) {
         try {
-          sgMail.setApiKey(
-            "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"
-          );
-
-          const randomPassword = generateRandomPassword(4);
-
-          const msg = {
-            to: userData.email,
-            from: "noreply@wbdday.pt",
-            subject: "Credenciais de acesso - WBD'Day 2023",
-            html: `<p>Caro participante,</p>
-          <p>Temos todo o gosto em confirmar que recebemos a inscrição da tua equipa para o Warner Bros. Discovery Day, que acontecerá no próximo dia 23 de setembro de 2023, em Lisboa.</p>
-          <p>A inscrição passou para a fase de validação, e entraremos em contacto assim que possível para validar ou não a vossa presença no passatempo, de acordo com os termos descritos no Regulamento.</p>
-          <p>Enviamos abaixo os dados de login para a aplicação do jogo, que estará disponível mais perto da data do Passatempo. Através do website <a href="www.wbdday.pt">www.wbdday.pt</a> poderás aceder diretamente à App Store ou à Play Store, onde poderás descarregar a aplicação de forma gratuita.</p>
-          <p><strong>DADOS DE LOGIN</strong></p>
-          <p>Email: ${userData.email}</p>
-          <p>Password: ${randomPassword}</p>
-          <p>Caso tenhas alguma dúvida ou questão, envia-nos um email para <a href="mailto:info@wbdday.pt">info@wbdday.pt</a>.</p>
-          <p>Cumprimentos,<br>Organização do WBD’Day 2023.</p>
-          <img src="https://casualbearapi-staging.s3.amazonaws.com/Screenshot+2023-09-01+at+16.50.11.png" alt="Signature Image" width="671" height="314">`,
-          };
-
-          sgMail
-            .send(msg)
-            .then(() => {
-              console.log("Email sent");
-            })
-            .catch((error) => {
-              console.error(error);
-            });
-
           const salt = await bcrypt.genSaltSync(10);
           const hashedPassword = await bcrypt.hashSync(randomPassword, salt);
 
@@ -91,21 +72,78 @@ router.post("/events/:eventId/teams", async (req, res) => {
           });
 
           createdUsers.push(user);
+
+          // send the email if team and users are well created
+          sgMail.setApiKey(
+            "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"
+          );
+
+          const msg = {
+            to: userData.email,
+            from: "noreply@wbdday.pt",
+            subject: "Credenciais de acesso - WBD'Day 2023",
+            html: `<p>Caro participante,</p>
+<p>Temos todo o gosto em confirmar que recebemos a inscrição da tua equipa para o Warner Bros. Discovery Day, que acontecerá no próximo dia 23 de setembro de 2023, em Lisboa.</p>
+<p>A inscrição passou para a fase de validação, e entraremos em contacto assim que possível para validar ou não a vossa presença no passatempo, de acordo com os termos descritos no Regulamento.</p>
+<p>Enviamos abaixo os dados de login para a aplicação do jogo, que estará disponível mais perto da data do Passatempo. Através do website <a href="www.wbdday.pt">www.wbdday.pt</a> poderás aceder diretamente à App Store ou à Play Store, onde poderás descarregar a aplicação de forma gratuita.</p>
+<p><strong>DADOS DE LOGIN</strong></p>
+<p>Email: ${userData.email}</p>
+<p>Password: ${randomPassword}</p>
+<p>Caso tenhas alguma dúvida ou questão, envia-nos um email para <a href="mailto:info@wbdday.pt">info@wbdday.pt</a>.</p>
+<p>Cumprimentos,<br>Organização do WBD’Day 2023.</p>
+<img src="https://casualbearapi-staging.s3.amazonaws.com/Screenshot+2023-09-01+at+16.50.11.png" alt="Signature Image" width="671" height="314">`,
+          };
+
+          sgMail
+            .send(msg)
+            .then(() => {
+              console.log("Email sent");
+            })
+            .catch((error) => {
+              console.error(error);
+            });
         } catch (error) {
-          res.status(400).send(error);
+          console.error(error);
+          return res.status(400).json({ message: "Error creating user" });
         }
       } else {
-        const user = await User.create(userData);
-        createdUsers.push(user);
+        try {
+          const user = await User.create(userData);
+          createdUsers.push(user);
+        } catch (error) {
+          console.error(error);
+          if (error.name === "SequelizeUniqueConstraintError") {
+            // Handle unique constraint violation (duplicate email or cc)
+            return res
+              .status(400)
+              .json({ message: "Email or cc already exists" });
+          }
+          return res.status(400).json({ message: "Error creating user" });
+        }
       }
     }
+
+    // if everything is ok with the users creation, create the team
+    const team = await Team.create({
+      name,
+      eventId,
+      zones: zonesAsString,
+      isVerified: "Validating",
+      isCheckedOverall: true,
+    });
 
     team.setMembers(createdUsers);
 
     res.status(201).json({ team, members: createdUsers });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+    if (error.name === "SequelizeUniqueConstraintError") {
+      // Handle unique constraint violation (duplicate email or cc)
+      return res.status(400).json({ message: "Email or cc already exists" });
+    } else {
+      // Handle other errors
+      console.error(error);
+      return res.status(500).json({ message: "Server error" });
+    }
   }
 });
 
@@ -242,7 +280,7 @@ router.get("/event/:eventId/teams/:teamId", verify, async (req, res) => {
 });
 
 // DELETE team by ID with cascade delete of users
-router.delete("/teams/:teamId", verify, async (req, res) => {
+router.delete("/teams/:teamId", async (req, res) => {
   const teamId = req.params.teamId;
 
   try {
@@ -252,15 +290,34 @@ router.delete("/teams/:teamId", verify, async (req, res) => {
       return res.status(404).json({ message: "Team not found" });
     }
 
-    // Delete the team with cascade deletion of associated users
-    await team.destroy({ cascade: true });
+    // Delete the members of the team
+    await deleteTeamMembers(team);
 
-    res.json({ message: "Team deleted successfully" });
+    // Now, delete the team itself
+    await team.destroy();
+
+    res.json({ message: "Team and its members deleted successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
+async function deleteTeamMembers(team) {
+  try {
+    const members = await User.findAll({ where: { teamId: team.id } });
+
+    // Iterate through the team's members and delete them
+    for (const member of members) {
+      await member.destroy();
+      console.log(`Deleted user ${member.name}`);
+    }
+
+    console.log(`Deleted all members of team ${team.name}`);
+  } catch (error) {
+    console.error(error);
+  }
+}
 
 function generateRandomPassword(length) {
   const charset =
