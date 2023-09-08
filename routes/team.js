@@ -39,9 +39,10 @@ router.post("/events/:eventId/teams", async (req, res) => {
   }
 
   if (hasDuplicateCC) {
-    return res
-      .status(400)
-      .json({ message: "Duplicate CC numbers in the request" });
+    return res.status(400).json({
+      message: "CC's duplicados",
+      details: null,
+    });
   }
 
   try {
