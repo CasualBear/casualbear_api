@@ -404,21 +404,46 @@ router.get("/events/:eventId/questions/:teamId", verify, async (req, res) => {
   }
 });
 
+router.post("/event/reset/:eventId", verify, async (req, res) => {
+  const eventId = req.params.eventId;
+  const { io } = req;
+
+  try {
+    // Update the Event table to set hasStarted to true for the specified eventId
+    await Event.update(
+      { hasStarted: "pre_game" },
+      {
+        where: { id: eventId },
+      }
+    );
+
+    // Emit the game started event
+    io.emit("PreGame");
+
+    res.status(200).json({
+      message: "Game Reseted",
+    });
+  } catch (error) {
+    console.error("Error reseting game:", error);
+    res.status(500).json({ error: "Failed to reset game" });
+  }
+});
+
 router.post("/event/start/:eventId", verify, async (req, res) => {
   const eventId = req.params.eventId;
   const { io } = req;
 
   try {
-    // Emit the game started event
-    io.emit("GameStarted");
-
     // Update the Event table to set hasStarted to true for the specified eventId
     await Event.update(
-      { hasStarted: true },
+      { hasStarted: "game_started" },
       {
         where: { id: eventId },
       }
     );
+
+    // Emit the game started event
+    io.emit("GameStarted");
 
     res.status(200).json({
       message: "Game started",
@@ -433,16 +458,16 @@ router.post("/event/stop/:eventId", verify, async (req, res) => {
   const eventId = req.params.eventId;
   const { io } = req;
   try {
-    // Emit the game started event
-    io.emit("GameEnded");
-
     // Update the Event table to set hasStarted to true
     await Event.update(
-      { hasStarted: false },
+      { hasStarted: "game_ended" },
       {
         where: { id: eventId },
       }
     );
+
+    // Emit the game started event
+    io.emit("GameEnded");
 
     res.status(200).json({
       message: "Game Ended",
