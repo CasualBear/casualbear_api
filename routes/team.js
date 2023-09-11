@@ -359,8 +359,15 @@ router.get("/event/:eventId/teams/:teamId", verify, async (req, res) => {
   const eventId = req.params.eventId;
 
   try {
-    // Find the team by its ID
-    const team = await Team.findByPk(teamId);
+    // Find the team by its ID and include team members
+    const team = await Team.findByPk(teamId, {
+      include: [
+        {
+          model: User,
+          as: "members", // Assuming you have an alias 'members' in your Team model
+        },
+      ],
+    });
 
     if (!team) {
       return res.status(404).json({ message: "Team not found" });
@@ -372,14 +379,13 @@ router.get("/event/:eventId/teams/:teamId", verify, async (req, res) => {
       },
     });
 
-    // Retrieve the team details
+    // Retrieve the team details along with its members
     res.json({ team, hasStarted: event.hasStarted });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 });
-
 /**
  * DELETE team by ID with cascade delete of users
  */
