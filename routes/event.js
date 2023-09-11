@@ -297,7 +297,7 @@ router.get("/events/:eventId/questions", async (req, res) => {
     if (questions.length === 0) {
       return res
         .status(404)
-        .json({ error: "No questions found for this event" });
+        .json({ error: "No questions found for this event now" });
     }
 
     res.status(200).json(questions);
