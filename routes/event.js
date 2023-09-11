@@ -113,18 +113,7 @@ router.post("/upload-event", upload.single("iconFile"), async (req, res) => {
 router.get("/events", async (req, res) => {
   try {
     // Retrieve all events from the database
-    const events = await Event.findAll({
-      include: {
-        model: Question,
-        as: "questions",
-        include: [
-          {
-            model: Answer,
-            as: "answers", // Include associated answers
-          },
-        ],
-      },
-    });
+    const events = await Event.findAll();
 
     res.status(200).json({ events: events });
   } catch (error) {
@@ -138,38 +127,13 @@ router.get("/events/:eventId", verify, async (req, res) => {
 
   try {
     // Retrieve the event with the specified ID from the database
-    const event = await Event.findByPk(eventId, {
-      include: [
-        {
-          model: Question,
-          as: "questions",
-          include: [
-            {
-              model: Answer,
-              as: "answers", // Include associated answers
-            },
-          ],
-        },
-      ],
-    });
+    const event = await Event.findByPk(eventId, {});
 
     if (!event) {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    // Find teams inside the event
-    const teams = await Team.findAll({
-      where: { eventId }, // Fetch teams where eventId matches
-      include: "members", // Include associated users/members
-    });
-
-    // Include teams within the event object
-    const eventWithTeams = {
-      ...event.toJSON(),
-      teams: teams,
-    };
-
-    res.status(200).json({ event: eventWithTeams });
+    res.status(200).json({ event: event });
   } catch (error) {
     console.error("Error retrieving event:", error);
     res.status(500).json({ error: "Failed to retrieve event" });
@@ -312,6 +276,37 @@ router.post("/events/:eventId/questions", verify, async (req, res) => {
   }
 });
 
+/**
+ * Get questions by event
+ */
+
+router.get("/events/:eventId/questions", async (req, res) => {
+  const eventId = req.params.eventId;
+
+  try {
+    const questions = await Question.findAll({
+      where: { eventId }, // Filter questions by eventId
+      include: [
+        {
+          model: Answer,
+          as: "answers", // Include associated answers
+        },
+      ],
+    });
+
+    if (questions.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "No questions found for this event" });
+    }
+
+    res.status(200).json(questions);
+  } catch (error) {
+    console.error("Error retrieving questions:", error);
+    res.status(500).json({ error: "Failed to retrieve questions" });
+  }
+});
+
 // Delete a question
 router.delete("/questions/:questionId", verify, async (req, res) => {
   const { questionId } = req.params;
@@ -343,6 +338,9 @@ router.delete("/questions/:questionId", verify, async (req, res) => {
   }
 });
 
+/**
+ * Get question details by team
+ */
 router.get("/events/:eventId/questions/:teamId", verify, async (req, res) => {
   const { eventId, teamId } = req.params;
 
@@ -404,6 +402,9 @@ router.get("/events/:eventId/questions/:teamId", verify, async (req, res) => {
   }
 });
 
+/**
+ * reset event
+ */
 router.post("/event/reset/:eventId", verify, async (req, res) => {
   const eventId = req.params.eventId;
   const { io } = req;
