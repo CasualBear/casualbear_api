@@ -5,8 +5,11 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const verify = require("./verifyToken");
 
-// create Team
-// This creates the users and send an email to the team captain with a username and password of his team
+/**
+ * 
+Create Team
+This creates the users and send an email to the team captain with a username and password of his team
+ */
 router.post("/events/:eventId/teams", async (req, res) => {
   const predefinedZones = [
     { name: "ZoneA", active: true },
@@ -148,6 +151,95 @@ router.post("/events/:eventId/teams", async (req, res) => {
   }
 });
 
+/**
+ * Update exinting team members
+ */
+router.put("/users/:userId", async (req, res) => {
+  const userId = req.params.userId;
+  const updatedUserData = req.body;
+
+  try {
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update user data
+    await user.update(updatedUserData);
+
+    return res.status(200).json({ message: "User updated successfully", user });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+/**
+ * Add user to the team
+ */
+router.post("/:teamId/add-users", async (req, res) => {
+  const teamId = req.params.teamId;
+  const userData = req.body; // A single user object to add to the team
+
+  try {
+    const team = await Team.findByPk(teamId);
+
+    if (!team) {
+      return res.status(404).json({ message: "Team not found" });
+    }
+
+    // Create a new user based on the provided userData
+    const user = await User.create(userData);
+
+    // Add the user to the team
+    await team.addMember(user);
+
+    return res
+      .status(200)
+      .json({ message: "User added to the team successfully" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+/**
+ * Delete user from team
+ */
+
+router.delete("/:teamId/users/:userId", async (req, res) => {
+  const teamId = req.params.teamId;
+  const userId = req.params.userId;
+
+  try {
+    const team = await Team.findByPk(teamId);
+    const user = await User.findByPk(userId);
+
+    if (!team || !user) {
+      return res.status(404).json({ message: "Team or user not found" });
+    }
+
+    // Remove the user from the team
+    await team.removeMember(user);
+
+    // Delete the user from the database
+    await user.destroy();
+
+    return res.status(200).json({
+      message:
+        "User removed from the team and deleted from the database successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+/**
+ * Get Teams inside an Event
+ */
+
 router.get("/events/:eventId/teams", verify, async (req, res) => {
   const eventId = req.params.eventId;
 
@@ -172,7 +264,9 @@ router.get("/events/:eventId/teams", verify, async (req, res) => {
   }
 });
 
-// Update user's isVerified and isCheckedIn
+/**
+ * Update user's isVerified and isCheckedIn
+ */
 router.put("/team-flags", verify, async (req, res) => {
   const teamUpdates = req.body;
   const { teamSockets } = req;
@@ -224,7 +318,9 @@ router.put("/team-flags", verify, async (req, res) => {
   }
 });
 
-// PUT update zones status by team ID
+/**
+ * PUT update zones status by team ID
+ */
 router.put("/teams/:teamId/zones", verify, async (req, res) => {
   const teamId = req.params.teamId;
   const { zones } = req.body;
@@ -254,6 +350,10 @@ router.put("/teams/:teamId/zones", verify, async (req, res) => {
   }
 });
 
+/**
+ * Get team details
+ */
+
 router.get("/event/:eventId/teams/:teamId", verify, async (req, res) => {
   const teamId = req.params.teamId;
   const eventId = req.params.eventId;
@@ -280,7 +380,9 @@ router.get("/event/:eventId/teams/:teamId", verify, async (req, res) => {
   }
 });
 
-// DELETE team by ID with cascade delete of users
+/**
+ * DELETE team by ID with cascade delete of users
+ */
 router.delete("/teams/:teamId", async (req, res) => {
   const teamId = req.params.teamId;
 
