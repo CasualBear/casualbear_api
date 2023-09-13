@@ -231,6 +231,7 @@ router.post("/events/:eventId/questions", verify, async (req, res) => {
     latitude,
     longitude,
     isVisible,
+    imageUrl,
     address,
   } = req.body;
 
@@ -250,6 +251,7 @@ router.post("/events/:eventId/questions", verify, async (req, res) => {
       address,
       points,
       isVisible,
+      imageUrl,
       eventId,
     });
 
