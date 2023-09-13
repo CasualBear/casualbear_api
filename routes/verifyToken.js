@@ -27,7 +27,7 @@ module.exports = async function (req, res, next) {
     });
 
     if (!user) {
-      return res.status(401).send("Authorization Invalid");
+      return res.status(401).send("Incorrect Device Identifier");
     }
 
     // If all checks pass, allow access

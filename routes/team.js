@@ -108,6 +108,12 @@ router.post("/events/:eventId/teams", async (req, res) => {
             });
         } catch (error) {
           console.error(error);
+          if (error.name === "SequelizeUniqueConstraintError") {
+            // Handle unique constraint violation (duplicate email or cc)
+            return res
+              .status(400)
+              .json({ message: "Email or cc already exists" });
+          }
           return res.status(400).json({ message: "Error creating user" });
         }
       } else {
