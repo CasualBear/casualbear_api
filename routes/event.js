@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
 const verify = require("./verifyToken");
+const moment = require("moment-timezone");
 
 const {
   Event,
@@ -443,13 +444,23 @@ router.post("/event/start/:eventId", verify, async (req, res) => {
       },
     });
 
-    // Update the Event table to set hasStarted to true for the specified eventId
+    // Calculate the eventInitHour with Portugal time zone
+    const portugalTime = moment.tz("Europe/Lisbon");
+    const eventInitHour = portugalTime.valueOf(); // Get timestamp in milliseconds
+
+    // Update the Event table to set hasStarted to true and eventInitHour
     await Event.update(
-      { hasStarted: "game_started" },
+      {
+        hasStarted: "game_started",
+        eventInitHour: eventInitHour,
+      },
       {
         where: { id: eventId },
       }
     );
+
+    // Update the event object with the calculated eventInitHour
+    event.eventInitHour = eventInitHour;
 
     // Emit the game started event
     io.emit(
