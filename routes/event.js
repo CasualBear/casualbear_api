@@ -437,6 +437,12 @@ router.post("/event/start/:eventId", verify, async (req, res) => {
   const { io } = req;
 
   try {
+    const event = await Event.findOne({
+      where: {
+        id: eventId,
+      },
+    });
+
     // Update the Event table to set hasStarted to true for the specified eventId
     await Event.update(
       { hasStarted: "game_started" },
@@ -446,7 +452,12 @@ router.post("/event/start/:eventId", verify, async (req, res) => {
     );
 
     // Emit the game started event
-    io.emit("GameStarted");
+    io.emit(
+      "GameStarted",
+      JSON.stringify({
+        eventInitHour: event.eventInitHour,
+      })
+    );
 
     res.status(200).json({
       message: "Game started",

@@ -386,7 +386,11 @@ router.get("/event/:eventId/teams/:teamId", verify, async (req, res) => {
     });
 
     // Retrieve the team details along with its members
-    res.json({ team, hasStarted: event.hasStarted });
+    res.json({
+      team,
+      hasStarted: event.hasStarted,
+      eventInitHour: event.eventInitHour,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });

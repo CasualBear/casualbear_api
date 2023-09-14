@@ -3,6 +3,7 @@ module.exports = (sequelize, DataTypes) => {
     name: DataTypes.STRING,
     description: DataTypes.STRING,
     selectedColor: DataTypes.BIGINT,
+    eventInitHour: DataTypes.BIGINT,
     hasStarted: DataTypes.BOOLEAN,
     rawUrl: DataTypes.STRING,
   });
