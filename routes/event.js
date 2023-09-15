@@ -14,6 +14,8 @@ const path = require("path");
 const AWS = require("aws-sdk");
 const multer = require("multer");
 
+let intervalId;
+
 // Set up Multer for handling file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -413,6 +415,38 @@ router.post("/event/reset/:eventId", verify, async (req, res) => {
   const { io } = req;
 
   try {
+    // resets the timer to unlock zones from the teams
+    clearInterval(intervalId);
+
+    //update teams to only have ZoneA Unlocked
+    Team.update({ zones: JSON.stringify(["Zone A"]) }, { where: {} })
+      .then(() => {
+        console.log("All teams except Zone A are locked.");
+      })
+      .catch((error) => {
+        console.error("Error updating teams:", error);
+      });
+
+    // Reset all team points to 0
+    Team.update({ totalPoints: 0 }, { where: {} })
+      .then(() => {
+        console.log("All team points have been reset to 0.");
+      })
+      .catch((error) => {
+        console.error("Error resetting team points:", error);
+      });
+
+    // Delete all answers correctly from the table relation
+    TeamQuestion.update({ answeredCorrectly: false }, { where: {} })
+      .then(() => {
+        console.log(
+          "answeredCorrectly set to false for all TeamQuestion entries."
+        );
+      })
+      .catch((error) => {
+        console.error("Error updating answeredCorrectly:", error);
+      });
+
     // Update the Event table to set hasStarted to true for the specified eventId
     await Event.update(
       { hasStarted: "pre_game" },
@@ -435,7 +469,7 @@ router.post("/event/reset/:eventId", verify, async (req, res) => {
 
 router.post("/event/start/:eventId", verify, async (req, res) => {
   const eventId = req.params.eventId;
-  const { io } = req;
+  const { io, teamSockets } = req;
 
   try {
     const event = await Event.findOne({
@@ -470,6 +504,12 @@ router.post("/event/start/:eventId", verify, async (req, res) => {
       })
     );
 
+    const performZoneUnlockingLogic = () => {
+      performZoneUnlockingLogicForAllTeams(teamSockets);
+    };
+
+    intervalId = setInterval(performZoneUnlockingLogic, 30 * 60 * 1000); // 30 minutes in milliseconds
+
     res.status(200).json({
       message: "Game started",
     });
@@ -502,5 +542,47 @@ router.post("/event/stop/:eventId", verify, async (req, res) => {
     res.status(500).json({ error: "Failed to end game" });
   }
 });
+
+async function performZoneUnlockingLogicForAllTeams(teamSockets) {
+  try {
+    // Fetch all teams (replace 'Team' with your actual Sequelize model)
+    const teams = await Team.findAll();
+
+    // Loop through all teams and apply the unlocking logic
+    for (const team of teams) {
+      const zones = JSON.parse(team.zones);
+
+      // Find the last active zone
+      let lastActiveZoneIndex = -1;
+      for (let i = zones.length - 1; i >= 0; i--) {
+        if (zones[i].active) {
+          lastActiveZoneIndex = i;
+          break;
+        }
+      }
+
+      if (
+        lastActiveZoneIndex !== -1 &&
+        lastActiveZoneIndex < zones.length - 2
+      ) {
+        zones[lastActiveZoneIndex + 1].active = true;
+        zones[lastActiveZoneIndex + 2].active = true;
+
+        await team.update({ zones: JSON.stringify(zones) });
+      } else if (
+        lastActiveZoneIndex === zones.length - 2 &&
+        zones[lastActiveZoneIndex].name === "ZoneD"
+      ) {
+        zones[lastActiveZoneIndex + 1].active = true;
+
+        await team.update({ zones: JSON.stringify(zones) });
+      }
+      const teamSocket = teamSockets[team.id];
+      teamSocket.emit("ZonesChanged");
+    }
+  } catch (error) {
+    console.error("Error performing zone unlocking logic:", error);
+  }
+}
 
 module.exports = router;
