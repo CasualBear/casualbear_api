@@ -66,7 +66,7 @@ router.post("/answer-question", verify, async (req, res) => {
           zones[currentZoneIndex + 2].active = true;
 
           await team.update({ zones: JSON.stringify(zones) });
-        } else if (currentZoneIndex === zones.length - 2 && zone === "ZoneE") {
+        } else if (currentZoneIndex === zones.length - 2 && zone === "ZoneD") {
           zones[currentZoneIndex + 1].active = true;
 
           await team.update({ zones: JSON.stringify(zones) });
@@ -129,8 +129,6 @@ async function getCorrectAnswersPerZone(teamId) {
     "ZoneCChallenges",
     "ZoneD",
     "ZoneDChallenges",
-    "ZoneE",
-    "ZoneEChallenges",
   ];
 
   const correctAnswersPerZone = {};

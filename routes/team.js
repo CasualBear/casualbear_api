@@ -20,8 +20,6 @@ router.post("/events/:eventId/teams", async (req, res) => {
     { name: "ZoneCChallenges", active: false },
     { name: "ZoneD", active: false },
     { name: "ZoneDChallenges", active: false },
-    { name: "ZoneE", active: false },
-    { name: "ZoneEChallenges", active: false },
   ];
 
   const zonesAsString = JSON.stringify(predefinedZones);

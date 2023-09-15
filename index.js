@@ -132,7 +132,7 @@ async function performZoneUnlockingLogicForAllTeams(teamSockets) {
         await team.update({ zones: JSON.stringify(zones) });
       } else if (
         lastActiveZoneIndex === zones.length - 2 &&
-        zones[lastActiveZoneIndex].name === "ZoneE"
+        zones[lastActiveZoneIndex].name === "ZoneD"
       ) {
         zones[lastActiveZoneIndex + 1].active = true;
 
