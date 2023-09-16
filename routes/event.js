@@ -418,8 +418,21 @@ router.post("/event/reset/:eventId", verify, async (req, res) => {
     // resets the timer to unlock zones from the teams
     clearInterval(intervalId);
 
+    const predefinedZones = [
+      { name: "ZoneA", active: true },
+      { name: "ZoneAChallenges", active: false },
+      { name: "ZoneB", active: false },
+      { name: "ZoneBChallenges", active: false },
+      { name: "ZoneC", active: false },
+      { name: "ZoneCChallenges", active: false },
+      { name: "ZoneD", active: false },
+      { name: "ZoneDChallenges", active: false },
+    ];
+
+    const zonesAsString = JSON.stringify(predefinedZones);
+
     //update teams to only have ZoneA Unlocked
-    Team.update({ zones: JSON.stringify(["Zone A"]) }, { where: {} })
+    Team.update({ zones: zonesAsString }, { where: {} })
       .then(() => {
         console.log("All teams except Zone A are locked.");
       })
