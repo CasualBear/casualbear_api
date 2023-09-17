@@ -344,7 +344,7 @@ router.put("/teams/:teamId/zones", verify, async (req, res) => {
     await team.update({ zones: zonesAsString });
     const teamSocket = teamSockets[teamId];
     if (teamSocket) {
-      teamSocket.emit("ZonesUpdated");
+      teamSocket.emit("ZonesChanged");
     }
 
     res.json({ message: "Zones status updated successfully" });

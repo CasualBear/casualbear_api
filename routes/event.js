@@ -482,7 +482,7 @@ router.post("/event/reset/:eventId", verify, async (req, res) => {
 
 router.post("/event/start/:eventId", verify, async (req, res) => {
   const eventId = req.params.eventId;
-  const { io, teamSockets } = req;
+  const { io } = req;
 
   try {
     const event = await Event.findOne({
@@ -518,10 +518,10 @@ router.post("/event/start/:eventId", verify, async (req, res) => {
     );
 
     const performZoneUnlockingLogic = () => {
-      performZoneUnlockingLogicForAllTeams(teamSockets);
+      performZoneUnlockingLogicForAllTeams(io);
     };
 
-    intervalId = setInterval(performZoneUnlockingLogic, 30 * 60 * 1000); // 30 minutes in milliseconds
+    intervalId = setInterval(performZoneUnlockingLogic, 1800000); // 25 seconds in milliseconds
 
     res.status(200).json({
       message: "Game started",
@@ -544,6 +544,9 @@ router.post("/event/stop/:eventId", verify, async (req, res) => {
       }
     );
 
+    // resets the timer to unlock zones from the teams
+    clearInterval(intervalId);
+
     // Emit the game started event
     io.emit("GameEnded");
 
@@ -556,7 +559,7 @@ router.post("/event/stop/:eventId", verify, async (req, res) => {
   }
 });
 
-async function performZoneUnlockingLogicForAllTeams(teamSockets) {
+async function performZoneUnlockingLogicForAllTeams(io) {
   try {
     // Fetch all teams (replace 'Team' with your actual Sequelize model)
     const teams = await Team.findAll();
@@ -590,8 +593,8 @@ async function performZoneUnlockingLogicForAllTeams(teamSockets) {
 
         await team.update({ zones: JSON.stringify(zones) });
       }
-      const teamSocket = teamSockets[team.id];
-      teamSocket.emit("ZonesChanged");
+
+      io.emit("ZonesChanged");
     }
   } catch (error) {
     console.error("Error performing zone unlocking logic:", error);
