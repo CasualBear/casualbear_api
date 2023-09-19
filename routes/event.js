@@ -477,7 +477,7 @@ router.post("/event/reset/:eventId", verify, async (req, res) => {
 
 router.post("/event/start/:eventId", verify, async (req, res) => {
   const eventId = req.params.eventId;
-  const { io } = req;
+  const { teamSockets } = req;
 
   try {
     const event = await Event.findOne({
@@ -513,7 +513,7 @@ router.post("/event/start/:eventId", verify, async (req, res) => {
     );
 
     const performZoneUnlockingLogic = () => {
-      performZoneUnlockingLogicForAllTeams(io);
+      performZoneUnlockingLogicForAllTeams(teamSockets);
     };
 
     intervalId = setInterval(performZoneUnlockingLogic, 60000); // 25 seconds in milliseconds
@@ -554,7 +554,7 @@ router.post("/event/stop/:eventId", verify, async (req, res) => {
   }
 });
 
-async function performZoneUnlockingLogicForAllTeams(io) {
+async function performZoneUnlockingLogicForAllTeams(teamSockets) {
   try {
     // Fetch all teams (replace 'Team' with your actual Sequelize model)
     const teams = await Team.findAll();
@@ -596,38 +596,29 @@ async function performZoneUnlockingLogicForAllTeams(io) {
         }
       });
 
-      const zonesToUnlock = [];
-
       for (let i = 0; i < zones.length; i++) {
         const zone = zones[i];
 
-        // Skip zones that are already active
-        if (zone.active) {
-          continue;
-        }
-
         // Check if this zone should be unlocked based on time criteria
-        const unlockTime = zone.unlockTime; // Assuming you have an 'unlockTime' field in your Zone model
+        const unlockTime = zone.unlockTime; // Assuming you have a 'unlockTime' field in your Zone model
 
-        if (unlockTime && currentTime >= unlockTime) {
+        if (currentTime >= unlockTime && !zone.active) {
           // Unlock the zone
           zone.active = true;
+
+          const teamSocket = teamSockets[team.id];
+          if (teamSocket) {
+            teamSocket.emit("ZonesChanged");
+          }
 
           // Update the unlockTime to prevent re-unlocking
           zone.unlockTime = null; // Set to null or remove the field
 
-          // Store the updated zone in the array of zones to unlock
-          zonesToUnlock.push(zone);
+          // Update the zones array in the team model
+          zones[i] = zone;
+
+          await team.update({ zones: JSON.stringify(zones) });
         }
-      }
-
-      // Check if there are zones to unlock
-      if (zonesToUnlock.length > 0) {
-        // Emit the "ZonesChanged" event once
-        io.emit("ZonesChanged");
-
-        // Update the zones array in the team model with the unlocked zones
-        await team.update({ zones: JSON.stringify(zones) });
       }
     }
   } catch (error) {
