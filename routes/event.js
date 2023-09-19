@@ -478,6 +478,7 @@ router.post("/event/reset/:eventId", verify, async (req, res) => {
 router.post("/event/start/:eventId", verify, async (req, res) => {
   const eventId = req.params.eventId;
   const { teamSockets } = req;
+  const { io } = req;
 
   try {
     const event = await Event.findOne({
@@ -595,29 +596,28 @@ async function performZoneUnlockingLogicForAllTeams(teamSockets) {
           zone.unlockTime = eventInitHour + 60 * 4000; // 120 minutes after eventInitHour
         }
       });
+      const teamSocket = teamSockets[team.id];
+      if (teamSocket) {
+        for (let i = 0; i < zones.length; i++) {
+          const zone = zones[i];
 
-      for (let i = 0; i < zones.length; i++) {
-        const zone = zones[i];
+          // Check if this zone should be unlocked based on time criteria
+          const unlockTime = zone.unlockTime; // Assuming you have a 'unlockTime' field in your Zone model
 
-        // Check if this zone should be unlocked based on time criteria
-        const unlockTime = zone.unlockTime; // Assuming you have a 'unlockTime' field in your Zone model
+          if (currentTime >= unlockTime && !zone.active) {
+            // Unlock the zone
+            zone.active = true;
 
-        if (currentTime >= unlockTime && !zone.active) {
-          // Unlock the zone
-          zone.active = true;
-
-          const teamSocket = teamSockets[team.id];
-          if (teamSocket) {
             teamSocket.emit("ZonesChanged");
+
+            // Update the unlockTime to prevent re-unlocking
+            zone.unlockTime = null; // Set to null or remove the field
+
+            // Update the zones array in the team model
+            zones[i] = zone;
+
+            await team.update({ zones: JSON.stringify(zones) });
           }
-
-          // Update the unlockTime to prevent re-unlocking
-          zone.unlockTime = null; // Set to null or remove the field
-
-          // Update the zones array in the team model
-          zones[i] = zone;
-
-          await team.update({ zones: JSON.stringify(zones) });
         }
       }
     }
