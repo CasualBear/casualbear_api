@@ -596,6 +596,8 @@ async function performZoneUnlockingLogicForAllTeams(io) {
         }
       });
 
+      const zonesToUnlock = [];
+
       for (let i = 0; i < zones.length; i++) {
         const zone = zones[i];
 
@@ -610,16 +612,22 @@ async function performZoneUnlockingLogicForAllTeams(io) {
         if (unlockTime && currentTime >= unlockTime) {
           // Unlock the zone
           zone.active = true;
-          io.emit("ZonesChanged");
 
           // Update the unlockTime to prevent re-unlocking
           zone.unlockTime = null; // Set to null or remove the field
 
-          // Update the zones array in the team model
-          zones[i] = zone;
-
-          await team.update({ zones: JSON.stringify(zones) });
+          // Store the updated zone in the array of zones to unlock
+          zonesToUnlock.push(zone);
         }
+      }
+
+      // Check if there are zones to unlock
+      if (zonesToUnlock.length > 0) {
+        // Emit the "ZonesChanged" event once
+        io.emit("ZonesChanged");
+
+        // Update the zones array in the team model with the unlocked zones
+        await team.update({ zones: JSON.stringify(zones) });
       }
     }
   } catch (error) {
