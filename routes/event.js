@@ -556,49 +556,66 @@ router.post("/event/stop/:eventId", verify, async (req, res) => {
 
 async function performZoneUnlockingLogicForAllTeams(io) {
   try {
+    // Fetch all teams (replace 'Team' with your actual Sequelize model)
     const teams = await Team.findAll();
 
+    const event = await Event.findByPk(1, {});
+
+    const eventInitHour = event.eventInitHour;
+
+    // Get the current timestamp
+    const currentTime = Date.now();
+
+    // Loop through all teams and apply the unlocking logic
     for (const team of teams) {
       const zones = JSON.parse(team.zones);
 
-      const teamId = team.id;
-
-      // Access the team-specific tracking object or create it if it doesn't exist
-      const zonesUnlockedByCorrectAnswers = teamTrackingObjects[teamId] || {};
-
-      // Find the last active zone
-      let lastActiveZoneIndex = -1;
-      for (let i = zones.length - 1; i >= 0; i--) {
-        if (zones[i].active) {
-          lastActiveZoneIndex = i;
-          break;
+      // Put unlock times based on eventInitHour (should be in database)
+      zones.forEach((zone, index) => {
+        if (index === 1) {
+          // Zone A Challenges
+          zone.unlockTime = eventInitHour + 60 * 1000; // 30 minutes after eventInitHour
+        } else if (index === 2) {
+          // Zone B
+          zone.unlockTime = eventInitHour + 60 * 1000; // 30 minutes after eventInitHour
+        } else if (index === 3) {
+          // Zone BChallenges
+          zone.unlockTime = eventInitHour + 60 * 2000; // 60 minutes after eventInitHour
+        } else if (index === 4) {
+          // Zone C
+          zone.unlockTime = eventInitHour + 60 * 2000; // 60 minutes after eventInitHour
+        } else if (index === 5) {
+          // Zone D
+          zone.unlockTime = eventInitHour + 60 * 3000; // 90 minutes after eventInitHour
+        } else if (index === 6) {
+          // Zone C Challenges
+          zone.unlockTime = eventInitHour + 60 * 3000; // 90 minutes after eventInitHour
+        } else if (index === 7) {
+          // ZoneDChallenges
+          zone.unlockTime = eventInitHour + 60 * 4000; // 120 minutes after eventInitHour
         }
-      }
+      });
 
-      if (
-        lastActiveZoneIndex !== -1 &&
-        lastActiveZoneIndex < zones.length - 2
-      ) {
-        const nextZoneName = zones[lastActiveZoneIndex + 1].name;
-        if (!zonesUnlockedByCorrectAnswers[nextZoneName]) {
-          zones[lastActiveZoneIndex + 1].active = true;
-          zones[lastActiveZoneIndex + 2].active = true;
+      for (let i = 0; i < zones.length; i++) {
+        const zone = zones[i];
+
+        // Check if this zone should be unlocked based on time criteria
+        const unlockTime = zone.unlockTime; // Assuming you have a 'unlockTime' field in your Zone model
+
+        if (unlockTime && currentTime >= unlockTime && !zone.active) {
+          // Unlock the zone
+          zone.active = true;
+          io.emit("ZonesChanged");
+
+          // Update the unlockTime to prevent re-unlocking
+          zone.unlockTime = null; // Set to null or remove the field
+
+          // Update the zones array in the team model
+          zones[i] = zone;
 
           await team.update({ zones: JSON.stringify(zones) });
         }
-      } else if (
-        lastActiveZoneIndex === zones.length - 2 &&
-        zones[lastActiveZoneIndex].name === "ZoneD"
-      ) {
-        const nextZoneName = zones[lastActiveZoneIndex + 1].name;
-        if (!zonesUnlockedByCorrectAnswers[nextZoneName]) {
-          zones[lastActiveZoneIndex + 1].active = true;
-
-          await team.update({ zones: JSON.stringify(zones) });
-        }
       }
-
-      io.emit("ZonesChanged");
     }
   } catch (error) {
     console.error("Error performing zone unlocking logic:", error);

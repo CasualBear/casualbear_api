@@ -8,7 +8,6 @@ const {
   Event,
   TeamQuestion,
 } = require("../app/models");
-const { teamTrackingObjects } = require("./zoneUnlockingLogic"); // Provide the correct path to the zoneUnlockingLogic.js file
 
 router.post("/answer-question", verify, async (req, res) => {
   const { teamId, questionId, answerIndex, timeSpent } = req.body;
@@ -49,9 +48,6 @@ router.post("/answer-question", verify, async (req, res) => {
     const zone = question.zone;
     const correctAnswersInZone = await getCorrectAnswersInZone(teamId, zone);
 
-    // Access the team-specific tracking object or create it if it doesn't exist
-    const zonesUnlockedByCorrectAnswers = teamTrackingObjects[teamId] || {};
-
     if (isCorrect) {
       await TeamQuestion.create({
         teamId: team.id,
@@ -66,27 +62,17 @@ router.post("/answer-question", verify, async (req, res) => {
         const currentZoneIndex = zones.findIndex((z) => z.name === zone);
 
         if (currentZoneIndex !== -1 && currentZoneIndex < zones.length - 2) {
-          const nextZoneName = zones[currentZoneIndex + 1].name;
-          if (!zonesUnlockedByCorrectAnswers[nextZoneName]) {
-            zones[currentZoneIndex + 1].active = true;
-            zones[currentZoneIndex + 2].active = true;
+          zones[currentZoneIndex + 1].active = true;
+          zones[currentZoneIndex + 2].active = true;
 
-            await team.update({ zones: JSON.stringify(zones) });
-            // Update the tracking variable
-            zonesUnlockedByCorrectAnswers[nextZoneName] = true;
-          }
+          await team.update({ zones: JSON.stringify(zones) });
         } else if (currentZoneIndex === zones.length - 2 && zone === "ZoneD") {
-          const nextZoneName = zones[currentZoneIndex + 1].name;
-          if (!zonesUnlockedByCorrectAnswers[nextZoneName]) {
-            zones[currentZoneIndex + 1].active = true;
+          zones[currentZoneIndex + 1].active = true;
 
-            await team.update({ zones: JSON.stringify(zones) });
-            // Update the tracking variable
-            zonesUnlockedByCorrectAnswers[nextZoneName] = true;
-          }
+          await team.update({ zones: JSON.stringify(zones) });
         }
 
-        const teamSocket = teamSockets[teamId];
+        const teamSocket = teamSockets[team.id];
         if (teamSocket) {
           teamSocket.emit("ZonesChanged");
         }
