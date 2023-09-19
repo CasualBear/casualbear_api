@@ -602,10 +602,9 @@ async function performZoneUnlockingLogicForAllTeams(io) {
         // Check if this zone should be unlocked based on time criteria
         const unlockTime = zone.unlockTime; // Assuming you have a 'unlockTime' field in your Zone model
 
-        if (unlockTime && currentTime >= unlockTime && !zone.active) {
+        if (currentTime >= unlockTime && !zone.active) {
           // Unlock the zone
           zone.active = true;
-          io.emit("ZonesChanged");
 
           // Update the unlockTime to prevent re-unlocking
           zone.unlockTime = null; // Set to null or remove the field
