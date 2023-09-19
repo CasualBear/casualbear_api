@@ -516,7 +516,7 @@ router.post("/event/start/:eventId", verify, async (req, res) => {
       performZoneUnlockingLogicForAllTeams(io);
     };
 
-    intervalId = setInterval(performZoneUnlockingLogic, 10000); // 25 seconds in milliseconds
+    intervalId = setInterval(performZoneUnlockingLogic, 60000); // 25 seconds in milliseconds
 
     res.status(200).json({
       message: "Game started",
