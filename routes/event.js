@@ -597,7 +597,7 @@ async function performZoneUnlockingLogicForAllTeams(teamSockets) {
         }
       });
       const teamSocket = teamSockets[team.id];
-      if (teamSocket) {
+      if (teamSocket && team.isCheckedIn) {
         for (let i = 0; i < zones.length; i++) {
           const zone = zones[i];
 
