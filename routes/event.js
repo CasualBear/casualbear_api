@@ -599,12 +599,18 @@ async function performZoneUnlockingLogicForAllTeams(io) {
       for (let i = 0; i < zones.length; i++) {
         const zone = zones[i];
 
-        // Check if this zone should be unlocked based on time criteria
-        const unlockTime = zone.unlockTime; // Assuming you have a 'unlockTime' field in your Zone model
+        // Skip zones that are already active
+        if (zone.active) {
+          continue;
+        }
 
-        if (currentTime >= unlockTime && !zone.active) {
+        // Check if this zone should be unlocked based on time criteria
+        const unlockTime = zone.unlockTime; // Assuming you have an 'unlockTime' field in your Zone model
+
+        if (unlockTime && currentTime >= unlockTime) {
           // Unlock the zone
           zone.active = true;
+          io.emit("ZonesChanged");
 
           // Update the unlockTime to prevent re-unlocking
           zone.unlockTime = null; // Set to null or remove the field
