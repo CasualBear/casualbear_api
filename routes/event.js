@@ -516,7 +516,7 @@ router.post("/event/start/:eventId", verify, async (req, res) => {
       performZoneUnlockingLogicForAllTeams(teamSockets);
     };
 
-    intervalId = setInterval(performZoneUnlockingLogic, 60000); // 25 seconds in milliseconds
+    intervalId = setInterval(performZoneUnlockingLogic, 20000); // 20 seconds in milliseconds
 
     res.status(200).json({
       message: "Game started",
@@ -574,10 +574,10 @@ async function performZoneUnlockingLogicForAllTeams(teamSockets) {
       zones.forEach((zone, index) => {
         if (index === 1) {
           // Zone A Challenges
-          zone.unlockTime = eventInitHour + 60 * 1000; // 30 minutes after eventInitHour
+          zone.unlockTime = eventInitHour + 20 * 1000; // 30 minutes after eventInitHour
         } else if (index === 2) {
           // Zone B
-          zone.unlockTime = eventInitHour + 60 * 1000; // 30 minutes after eventInitHour
+          zone.unlockTime = eventInitHour + 40 * 1000; // 30 minutes after eventInitHour
         } else if (index === 3) {
           // Zone BChallenges
           zone.unlockTime = eventInitHour + 60 * 2000; // 60 minutes after eventInitHour
