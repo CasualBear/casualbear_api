@@ -13,6 +13,7 @@ const router = require("express").Router();
 const path = require("path");
 const AWS = require("aws-sdk");
 const multer = require("multer");
+const { teamTrackingObjects } = require("./zoneUnlockingLogic"); // Provide the correct path to the zoneUnlockingLogic.js file
 
 let intervalId;
 
@@ -515,7 +516,7 @@ router.post("/event/start/:eventId", verify, async (req, res) => {
       performZoneUnlockingLogicForAllTeams(io);
     };
 
-    intervalId = setInterval(performZoneUnlockingLogic, 1800000); // 25 seconds in milliseconds
+    intervalId = setInterval(performZoneUnlockingLogic, 10000); // 25 seconds in milliseconds
 
     res.status(200).json({
       message: "Game started",
@@ -555,12 +556,15 @@ router.post("/event/stop/:eventId", verify, async (req, res) => {
 
 async function performZoneUnlockingLogicForAllTeams(io) {
   try {
-    // Fetch all teams (replace 'Team' with your actual Sequelize model)
     const teams = await Team.findAll();
 
-    // Loop through all teams and apply the unlocking logic
     for (const team of teams) {
       const zones = JSON.parse(team.zones);
+
+      const teamId = team.id;
+
+      // Access the team-specific tracking object or create it if it doesn't exist
+      const zonesUnlockedByCorrectAnswers = teamTrackingObjects[teamId] || {};
 
       // Find the last active zone
       let lastActiveZoneIndex = -1;
@@ -575,17 +579,23 @@ async function performZoneUnlockingLogicForAllTeams(io) {
         lastActiveZoneIndex !== -1 &&
         lastActiveZoneIndex < zones.length - 2
       ) {
-        zones[lastActiveZoneIndex + 1].active = true;
-        zones[lastActiveZoneIndex + 2].active = true;
+        const nextZoneName = zones[lastActiveZoneIndex + 1].name;
+        if (!zonesUnlockedByCorrectAnswers[nextZoneName]) {
+          zones[lastActiveZoneIndex + 1].active = true;
+          zones[lastActiveZoneIndex + 2].active = true;
 
-        await team.update({ zones: JSON.stringify(zones) });
+          await team.update({ zones: JSON.stringify(zones) });
+        }
       } else if (
         lastActiveZoneIndex === zones.length - 2 &&
         zones[lastActiveZoneIndex].name === "ZoneD"
       ) {
-        zones[lastActiveZoneIndex + 1].active = true;
+        const nextZoneName = zones[lastActiveZoneIndex + 1].name;
+        if (!zonesUnlockedByCorrectAnswers[nextZoneName]) {
+          zones[lastActiveZoneIndex + 1].active = true;
 
-        await team.update({ zones: JSON.stringify(zones) });
+          await team.update({ zones: JSON.stringify(zones) });
+        }
       }
 
       io.emit("ZonesChanged");
