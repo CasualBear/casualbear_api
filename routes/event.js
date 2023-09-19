@@ -517,7 +517,7 @@ router.post("/event/start/:eventId", verify, async (req, res) => {
       performZoneUnlockingLogicForAllTeams(teamSockets);
     };
 
-    intervalId = setInterval(performZoneUnlockingLogic, 60000); // 20 seconds in milliseconds
+    intervalId = setInterval(performZoneUnlockingLogic, 10000); // 20 seconds in milliseconds
 
     res.status(200).json({
       message: "Game started",
@@ -569,55 +569,59 @@ async function performZoneUnlockingLogicForAllTeams(teamSockets) {
 
     // Loop through all teams and apply the unlocking logic
     for (const team of teams) {
+      if (!team.isCheckedIn) {
+        continue;
+      }
+
+      const teamSocket = teamSockets[team.id];
+
+      if (!teamSocket) {
+        continue;
+      }
+
       const zones = JSON.parse(team.zones);
 
       // Put unlock times based on eventInitHour (should be in database)
       zones.forEach((zone, index) => {
         if (index === 1) {
-          // Zone A Challenges
-          zone.unlockTime = eventInitHour + 60 * 1000; // 30 minutes after eventInitHour
+          // Zone A Challenges, 30 minutes after eventInitHour
+          zone.unlockTime = eventInitHour + 30 * 60 * 1000;
         } else if (index === 2) {
-          // Zone B
-          zone.unlockTime = eventInitHour + 60 * 1000; // 30 minutes after eventInitHour
+          // Zone B, 30 minutes after eventInitHour
+          zone.unlockTime = eventInitHour + 30 * 60 * 1000;
         } else if (index === 3) {
-          // Zone BChallenges
-          zone.unlockTime = eventInitHour + 120 * 1000; // 60 minutes after eventInitHour
+          // Zone BChallenges, 60 minutes after eventInitHour
+          zone.unlockTime = eventInitHour + 60 * 60 * 1000;
         } else if (index === 4) {
-          // Zone C
-          zone.unlockTime = eventInitHour + 120 * 1000; // 60 minutes after eventInitHour
+          // Zone C, 60 minutes (1 hour) after eventInitHour
+          zone.unlockTime = eventInitHour + 60 * 60 * 1000;
         } else if (index === 5) {
-          // Zone D
-          zone.unlockTime = eventInitHour + 180 * 1000; // 90 minutes after eventInitHour
+          // Zone D, 90 minutes (1 hour and 30 minutes) after eventInitHour
+          zone.unlockTime = eventInitHour + 90 * 60 * 1000;
         } else if (index === 6) {
-          // Zone C Challenges
-          zone.unlockTime = eventInitHour + 180 * 1000; // 90 minutes after eventInitHour
+          // Zone C Challenges, 90 minutes (1 hour and 30 minutes) after eventInitHour
+          zone.unlockTime = eventInitHour + 90 * 60 * 1000;
         } else if (index === 7) {
-          // ZoneDChallenges
-          zone.unlockTime = eventInitHour + 240 * 1000; // 120 minutes after eventInitHour
+          // Zone DChallenges, 120 minutes (2 hours) after eventInitHour
+          zone.unlockTime = eventInitHour + 120 * 60 * 1000;
         }
       });
-      const teamSocket = teamSockets[team.id];
-      if (teamSocket && team.isCheckedIn) {
-        for (let i = 0; i < zones.length; i++) {
-          const zone = zones[i];
 
-          // Check if this zone should be unlocked based on time criteria
-          const unlockTime = zone.unlockTime; // Assuming you have a 'unlockTime' field in your Zone model
+      for (let i = 0; i < zones.length; i++) {
+        const zone = zones[i];
 
-          if (currentTime >= unlockTime && !zone.active) {
-            // Unlock the zone
-            zone.active = true;
+        // Check if this zone should be unlocked based on time criteria
+        const unlockTime = zone.unlockTime; // Assuming you have a 'unlockTime' field in your Zone model
 
-            teamSocket.emit("ZonesChanged");
+        if (currentTime >= unlockTime && !zone.active) {
+          // Unlock the zone
+          zone.active = true;
+          teamSocket.emit("ZonesChanged");
 
-            // Update the unlockTime to prevent re-unlocking
-            zone.unlockTime = null; // Set to null or remove the field
+          // Update the zones array in the team model
+          zones[i] = zone;
 
-            // Update the zones array in the team model
-            zones[i] = zone;
-
-            await team.update({ zones: JSON.stringify(zones) });
-          }
+          await team.update({ zones: JSON.stringify(zones) });
         }
       }
     }
