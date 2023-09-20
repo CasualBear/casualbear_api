@@ -35,6 +35,10 @@ io.on("connection", (socket) => {
     teamSockets[teamId] = socket; // Store the socket instance associated with the team
   });
 
+  socket.on("locationUpdated", (teamId) => {
+    console.log(`Location Updated`);
+  });
+
   socket.on("disconnect", () => {
     console.log("Socket disconnected");
     // Remove the socket instance from the mapping if needed
