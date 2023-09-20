@@ -619,9 +619,9 @@ async function performZoneUnlockingLogicForAllTeams(teamSockets) {
           zones[i] = zone;
 
           await team.update({ zones: JSON.stringify(zones) });
+          teamSocket.emit("ZonesChanged");
         }
       }
-      teamSocket.emit("ZonesChanged");
     }
   } catch (error) {
     console.error("Error performing zone unlocking logic:", error);
