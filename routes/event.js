@@ -8,6 +8,7 @@ const {
   Team,
   Answer,
   TeamQuestion,
+  TeamLocation,
 } = require("../app/models");
 const router = require("express").Router();
 const path = require("path");
