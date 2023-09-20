@@ -35,8 +35,11 @@ io.on("connection", (socket) => {
     teamSockets[teamId] = socket; // Store the socket instance associated with the team
   });
 
-  socket.on("locationUpdated", (teamId) => {
-    console.log(`Location Updated`);
+  socket.on("locationUpdated", (locationData) => {
+    const { latitude, longitude, teamId } = locationData;
+    console.log(
+      `Location Updated for Team ${teamId}: Latitude ${latitude}, Longitude ${longitude}`
+    );
   });
 
   socket.on("disconnect", () => {
