@@ -453,6 +453,15 @@ router.post("/event/reset/:eventId", verify, async (req, res) => {
         console.error("Error deleting records:", error);
       });
 
+    try {
+      // Destroy all records in the TeamLocation table
+      await TeamLocation.destroy({ where: {} });
+
+      console.log("All records in TeamLocation table have been deleted.");
+    } catch (error) {
+      console.error("Error deleting records:", error);
+    }
+
     // Update the Event table to set hasStarted to true for the specified eventId
     await Event.update(
       { hasStarted: "pre_game" },
