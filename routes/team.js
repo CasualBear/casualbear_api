@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { Team, User, Event } = require("../app/models"); // Import your models
+const { Team, User, Event, TeamLocation } = require("../app/models"); // Import your models
 const sgMail = require("@sendgrid/mail");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -319,6 +319,53 @@ router.put("/team-flags", verify, async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+/**
+ * Set Team location
+ */
+router.post("/teams/:teamId/location", async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const { latitude, longitude } = req.body;
+
+    // Use Sequelize to create a new TeamLocation record
+    const newLocation = await TeamLocation.create({
+      teamId,
+      latitude,
+      longitude,
+    });
+
+    res.status(201).json(newLocation);
+  } catch (error) {
+    console.error("Error creating team location:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+module.exports = router;
+
+/**
+ * Get Team Location
+ */
+router.get("/teams/:teamId/location", async (req, res) => {
+  try {
+    const { teamId } = req.params;
+
+    // Use Sequelize to find the location data for the specified teamId
+    const locationData = await TeamLocation.findAll({
+      where: { teamId },
+    });
+
+    if (!locationData) {
+      return res.status(404).json({ message: "Team location not found" });
+    }
+
+    res.status(200).json(locationData);
+  } catch (error) {
+    console.error("Error fetching team location:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 

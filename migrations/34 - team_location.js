@@ -10,12 +10,6 @@ module.exports = {
       teamId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: {
-          model: "Teams",
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "CASCADE",
       },
       latitude: {
         type: Sequelize.FLOAT,

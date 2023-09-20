@@ -36,11 +36,6 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "teamId",
     });
 
-    Team.hasMany(models.TeamLocation, {
-      as: "locations",
-      foreignKey: "teamId",
-    });
-
     Team.belongsToMany(models.Question, {
       through: models.TeamQuestion,
       foreignKey: "teamId",
