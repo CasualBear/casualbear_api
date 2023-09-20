@@ -445,7 +445,7 @@ router.post("/event/reset/:eventId", verify, async (req, res) => {
       });
 
     // Delete all answers correctly from the table relation
-    TeamQuestion.update({ answeredCorrectly: false }, { where: {} })
+    TeamQuestion.update({ answeredCorrectly: null }, { where: {} })
       .then(() => {
         console.log(
           "answeredCorrectly set to false for all TeamQuestion entries."
