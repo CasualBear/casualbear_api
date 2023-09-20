@@ -445,14 +445,12 @@ router.post("/event/reset/:eventId", verify, async (req, res) => {
       });
 
     // Delete all answers correctly from the table relation
-    TeamQuestion.update({ answeredCorrectly: null }, { where: {} })
-      .then(() => {
-        console.log(
-          "answeredCorrectly set to false for all TeamQuestion entries."
-        );
+    TeamQuestion.destroy({ where: {} })
+      .then((rowsDeleted) => {
+        console.log(`${rowsDeleted} records deleted from TeamQuestion.`);
       })
       .catch((error) => {
-        console.error("Error updating answeredCorrectly:", error);
+        console.error("Error deleting records:", error);
       });
 
     // Update the Event table to set hasStarted to true for the specified eventId
