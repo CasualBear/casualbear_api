@@ -3,6 +3,7 @@ const app = express();
 const cors = require("cors");
 const dotenv = require("dotenv");
 const schedule = require("node-schedule");
+const { TeamLocation } = require("../app/models");
 const moment = require("moment-timezone");
 const httpServer = require("http").createServer(app);
 const io = require("socket.io")(httpServer, {
@@ -35,11 +36,26 @@ io.on("connection", (socket) => {
     teamSockets[teamId] = socket; // Store the socket instance associated with the team
   });
 
-  socket.on("locationUpdated", (locationData) => {
+  socket.on("locationUpdated", async (locationData) => {
     const { latitude, longitude, teamId } = locationData;
-    console.log(
-      `Location Updated for Team ${teamId}: Latitude ${latitude}, Longitude ${longitude}`
-    );
+
+    try {
+      // Create a new TeamLocation record
+      await TeamLocation.create({
+        teamId,
+        latitude,
+        longitude,
+      });
+
+      // TODO emit in socket
+      io.emit("locationSaved", savedLocation.toJSON());
+
+      console.log(
+        `Location Updated for Team ${teamId}: Latitude ${latitude}, Longitude ${longitude}`
+      );
+    } catch (error) {
+      console.error("Error saving location data:", error);
+    }
   });
 
   socket.on("disconnect", () => {
