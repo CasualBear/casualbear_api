@@ -515,7 +515,7 @@ router.post("/event/start/:eventId", verify, async (req, res) => {
       performZoneUnlockingLogicForAllTeams(teamSockets);
     };
 
-    intervalId = setInterval(performZoneUnlockingLogic, 3 * 60 * 1000);
+    intervalId = setInterval(performZoneUnlockingLogic, 1 * 60 * 1000);
 
     res.status(200).json({
       message: "Game started",
@@ -583,25 +583,25 @@ async function performZoneUnlockingLogicForAllTeams(teamSockets) {
       zones.forEach((zone, index) => {
         if (index === 1) {
           // Zone A Challenges, 30 minutes after eventInitHour
-          zone.unlockTime = eventInitHour + 3 * 60 * 1000;
+          zone.unlockTime = eventInitHour + 1 * 60 * 1000;
         } else if (index === 2) {
           // Zone B, 30 minutes after eventInitHour
-          zone.unlockTime = eventInitHour + 3 * 60 * 1000;
+          zone.unlockTime = eventInitHour + 1 * 60 * 1000;
         } else if (index === 3) {
           // Zone BChallenges, 60 minutes after eventInitHour
-          zone.unlockTime = eventInitHour + 6 * 60 * 1000;
+          zone.unlockTime = eventInitHour + 2 * 60 * 1000;
         } else if (index === 4) {
           // Zone C, 60 minutes (1 hour) after eventInitHour
-          zone.unlockTime = eventInitHour + 6 * 60 * 1000;
+          zone.unlockTime = eventInitHour + 2 * 60 * 1000;
         } else if (index === 5) {
           // Zone D, 90 minutes (1 hour and 30 minutes) after eventInitHour
-          zone.unlockTime = eventInitHour + 9 * 60 * 1000;
+          zone.unlockTime = eventInitHour + 3 * 60 * 1000;
         } else if (index === 6) {
           // Zone C Challenges, 90 minutes (1 hour and 30 minutes) after eventInitHour
-          zone.unlockTime = eventInitHour + 9 * 60 * 1000;
+          zone.unlockTime = eventInitHour + 3 * 60 * 1000;
         } else if (index === 7) {
           // Zone DChallenges, 120 minutes (2 hours) after eventInitHour
-          zone.unlockTime = eventInitHour + 12 * 60 * 1000;
+          zone.unlockTime = eventInitHour + 4 * 60 * 1000;
         }
       });
 
