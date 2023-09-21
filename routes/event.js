@@ -583,10 +583,6 @@ async function performZoneUnlockingLogicForAllTeams(teamSockets) {
 
       const teamSocket = teamSockets[team.id];
 
-      if (!teamSocket) {
-        continue;
-      }
-
       const zones = JSON.parse(team.zones);
 
       // Put unlock times based on eventInitHour (should be in database)
@@ -629,7 +625,9 @@ async function performZoneUnlockingLogicForAllTeams(teamSockets) {
           zones[i] = zone;
 
           await team.update({ zones: JSON.stringify(zones) });
-          teamSocket.emit("ZonesChanged");
+          if (teamSocket) {
+            teamSocket.emit("ZonesChanged");
+          }
         }
       }
     }
