@@ -47,7 +47,7 @@ io.on("connection", (socket) => {
         longitude,
       });
 
-      socket.emit(
+      io.emit(
         "locationSaved",
         JSON.stringify({
           latitude: latitude,
