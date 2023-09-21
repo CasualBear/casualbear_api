@@ -47,8 +47,14 @@ io.on("connection", (socket) => {
         longitude,
       });
 
-      // TODO emit in socket
-      io.emit("locationSaved", savedLocation.toJSON());
+      socket.emit(
+        "locationSaved",
+        JSON.stringify({
+          latitude: latitude,
+          longitude: longitude,
+          teamId: teamId,
+        })
+      );
 
       console.log(
         `Location Updated for Team ${teamId}: Latitude ${latitude}, Longitude ${longitude}`
