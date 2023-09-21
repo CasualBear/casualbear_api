@@ -26,6 +26,18 @@ router.post("/answer-question", verify, async (req, res) => {
       return res.status(404).json({ error: "Question not found" });
     }
 
+    // Check if the team has already answered this question
+    const hasAnswered = await TeamQuestion.findOne({
+      where: {
+        teamId: team.id,
+        questionId: question.id,
+      },
+    });
+
+    if (hasAnswered) {
+      return res.status(400).json({ error: "Question already answered" });
+    }
+
     var isCorrect;
 
     // Check if questionId is null
