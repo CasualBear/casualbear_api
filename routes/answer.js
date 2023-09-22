@@ -39,10 +39,12 @@ router.post("/answer-question", verify, async (req, res) => {
     }
 
     var isCorrect;
+    var isChallenge;
 
     // Check if questionId is null
     if (answerIndex === null) {
       isCorrect = true;
+      isChallenge = true;
     } else {
       isCorrect = parseInt(answerIndex) === question.correctAnswerIndex;
     }
@@ -60,7 +62,7 @@ router.post("/answer-question", verify, async (req, res) => {
     const zone = question.zone;
     const correctAnswersInZone = await getCorrectAnswersInZone(teamId, zone);
 
-    if (isCorrect) {
+    if (isCorrect && !isChallenge) {
       await TeamQuestion.create({
         teamId: team.id,
         questionId: question.id,
@@ -68,7 +70,7 @@ router.post("/answer-question", verify, async (req, res) => {
       });
 
       // Check if the team has unlocked the next zone
-      if (correctAnswersInZone + 1 >= 4) {
+      if (correctAnswersInZone + 1 == 4) {
         const zones = JSON.parse(team.zones);
 
         const currentZoneIndex = zones.findIndex((z) => z.name === zone);
