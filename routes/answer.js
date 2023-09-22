@@ -39,12 +39,10 @@ router.post("/answer-question", verify, async (req, res) => {
     }
 
     var isCorrect;
-    var isChallenge;
 
     // Check if questionId is null
     if (answerIndex === null) {
       isCorrect = true;
-      isChallenge = true;
     } else {
       isCorrect = parseInt(answerIndex) === question.correctAnswerIndex;
     }
@@ -62,7 +60,7 @@ router.post("/answer-question", verify, async (req, res) => {
     const zone = question.zone;
     const correctAnswersInZone = await getCorrectAnswersInZone(teamId, zone);
 
-    if (isCorrect && !isChallenge) {
+    if (isCorrect) {
       await TeamQuestion.create({
         teamId: team.id,
         questionId: question.id,
