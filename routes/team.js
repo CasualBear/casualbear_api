@@ -244,7 +244,7 @@ router.delete("/:teamId/users/:userId", async (req, res) => {
  * Get Teams inside an Event
  */
 
-router.get("/events/:eventId/teams", verify, async (req, res) => {
+router.get("/events/:eventId/teams", async (req, res) => {
   const eventId = req.params.eventId;
 
   try {
